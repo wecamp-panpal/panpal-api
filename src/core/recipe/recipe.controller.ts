@@ -9,6 +9,8 @@ import {
   Query,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { RecipeService } from './recipe.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
@@ -19,7 +21,6 @@ import {
 } from './dto/recipe-response.dto';
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
 import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('recipes')

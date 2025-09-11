@@ -4,8 +4,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 @Injectable()
 export class SupabaseService {
   private readonly client: SupabaseClient;
-  private readonly bucketName =
-    process.env.SUPABASE_BUCKET_IMAGES || 'images';
+  private readonly bucketName = process.env.SUPABASE_BUCKET_IMAGES || 'images';
 
   constructor() {
     const url = process.env.SUPABASE_URL;

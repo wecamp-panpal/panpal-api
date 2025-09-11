@@ -15,14 +15,25 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum RecipeCategory {
+  APPETIZER
+  DESSERT
+  MAIN_DISH
+  SIDE_DISH
+  SOUP
+  SAUCE
+  DRINK
+  SALAD
+}
+
 model User {
   id          String   @id @default(uuid())
   email       String   @unique
   passwordHash String  @map("password_hash")
   name        String?
   avatarUrl   String?  @map("avatar_url")
-  country        String?
-  role        String? @default("user") 
+  country     String?
+  role        String?  @default("user") 
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -31,7 +42,6 @@ model User {
   comments   Comment[]
   ratings    Rating[]
   favorites  Favorite[]
-  userRatings UserRatings[] 
 
   // Indexes
   @@index([email])
@@ -40,18 +50,18 @@ model User {
 }
 
 model Recipe {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   title       String
   description String?
-  cookingTime String?  @map("cooking_time")
-  authorName  String   @map("author_name")
-  authorId    String   @map("author_id")
-  category    String
-  imageUrl    String?  @map("image_url")
-  ratingAvg   Float?   @map("rating_avg")
-  ratingCount Int?     @map("rating_count")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  cookingTime String?        @map("cooking_time")
+  authorName  String         @map("author_name")
+  authorId    String         @map("author_id")
+  category    RecipeCategory
+  imageUrl    String?        @map("image_url")
+  ratingAvg   Float?         @map("rating_avg")
+  ratingCount Int?           @map("rating_count")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
 
   // Relations
   author      User         @relation(fields: [authorId], references: [id])
@@ -85,10 +95,11 @@ model Ingredient {
 }
 
 model Step {
-  id          String @id @default(uuid())
-  recipeId    String @map("recipe_id")
-  stepNumber  Int    @map("step_number")
+  id          String  @id @default(uuid())
+  recipeId    String  @map("recipe_id")
+  stepNumber  Int     @map("step_number")
   instruction String
+  imageUrl    String? @map("image_url") // Added for requirements 2.3
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
@@ -97,12 +108,15 @@ model Step {
 }
 
 model Rating {
-  id        String   @id @default(uuid())
-  recipeId  String   @map("recipe_id")
-  userId    String   @map("user_id")
+  id        String    @id @default(uuid())
+  recipeId  String    @map("recipe_id")
+  userId    String    @map("user_id")
   score     Int
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  imageUrls String[]  @map("image_urls") // For user review images
+  comment   String?   // User review comment
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // Soft delete
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -110,25 +124,27 @@ model Rating {
   @@unique([recipeId, userId])
   @@index([recipeId])
   @@index([userId])
+  @@index([deletedAt]) // For soft delete queries
   @@map("ratings")
 }
 
 model Comment {
-  id        String   @id @default(uuid())
-  recipeId  String   @map("recipe_id")
-  userId    String   @map("user_id")
+  id        String    @id @default(uuid())
+  recipeId  String    @map("recipe_id")
+  userId    String    @map("user_id")
   content   String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at") // Added soft delete for consistency
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([recipeId, createdAt])
   @@index([userId])
+  @@index([deletedAt])
   @@map("comments")
 }
-
 
 model Favorite {
   id        String   @id @default(uuid())
@@ -143,22 +159,4 @@ model Favorite {
   @@index([userId])
   @@index([recipeId])
   @@map("favorites")
-}
-
-
-model UserRatings {
-  id         String    @id @default(uuid()) @db.Uuid
-  user_id    String    @db.Uuid
-  recipe_id  String
-  rating     Int       @default(0) // này cũng z thì ý muốn tóm nó lại thành 1 bảng userrating này thui í z
-  image_urls String[]
-  comment    String? // ý là cái này bà làm bảng riêng nè
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
-
-  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  recipe Recipe @relation(fields: [recipe_id], references: [id], onDelete: Cascade)
-
-  @@map("user_ratings")
 }
