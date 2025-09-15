@@ -18,9 +18,10 @@ import {
   CommentResponseDto,
 } from './dto/comment-response.dto';
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
-import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
 @Controller('comments')
+    @ApiBearerAuth('access-token')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
@@ -69,6 +70,7 @@ export class CommentController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
+  
   @ApiOperation({ summary: 'Delete a comment' })
   @ApiResponse({ status: 200, description: 'Delete a comment' })
   @ApiResponse({ status: 400, description: 'Bad Request' })

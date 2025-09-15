@@ -9,7 +9,12 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -20,6 +25,7 @@ import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard) // Bảo vệ tất cả endpoints
+@ApiBearerAuth('access-token')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
@@ -34,16 +40,19 @@ export class UserController {
   }
 
   @Get('me')
+  
   getMe(@Request() req): UserResponseDto {
     return req.user;
   }
 
   @Get(':id')
+  
   async findOne(@Param('id') id: string): Promise<UserResponseDto> {
     return this.userService.findOne(id);
   }
 
   @Patch(':id')
+  
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -57,6 +66,7 @@ export class UserController {
   }
 
   @Post('avatar')
+  
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload or update user avatar' })

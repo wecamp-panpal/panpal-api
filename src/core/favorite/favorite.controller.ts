@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { FavoriteService } from './favorite.service';
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
-import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { RecipeListResponseDto } from '../recipe/dto/recipe-response.dto';
 
 class ToggleFavoriteDto {
@@ -18,17 +18,20 @@ class ToggleFavoriteDto {
 }
 
 @Controller('favorites')
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard)
 export class FavoriteController {
   constructor(private readonly favoriteService: FavoriteService) {}
 
   @Post()
+  
   @ApiOperation({ summary: 'Add favorite' })
   async add(@Request() req, @Body() dto: ToggleFavoriteDto): Promise<void> {
     return this.favoriteService.add(req.user.id, dto.recipeId);
   }
 
   @Delete()
+    
   @ApiOperation({ summary: 'Remove favorite' })
   async remove(
     @Request() req,
@@ -38,6 +41,7 @@ export class FavoriteController {
   }
 
   @Get()
+  
   @ApiOperation({ summary: 'List my favorites' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
@@ -53,6 +57,7 @@ export class FavoriteController {
   }
 
   @Get('recipes')
+  
   @ApiOperation({ summary: 'List my favourite recipes (full Recipe DTOs)' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })

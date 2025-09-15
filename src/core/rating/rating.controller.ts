@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
 import { RatingService } from './rating.service';
-import { ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 class UpsertRatingDto {
   recipeId: string;
@@ -17,11 +17,12 @@ class UpsertRatingDto {
 }
 
 @Controller('ratings')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('access-token')
 export class RatingController {
   constructor(private readonly ratingService: RatingService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Upsert my rating for a recipe' })
   async upsert(@Request() req, @Body() dto: UpsertRatingDto) {
     return this.ratingService.upsert(req.user.id, dto.recipeId, dto.score);

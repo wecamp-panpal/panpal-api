@@ -29,8 +29,7 @@ export class RecipeService {
         cookingTime: dto.cookingTime,
         authorName: author?.name || author?.email || 'Anonymous',
         authorId,
-        category: dto.category,
-        imageUrl: dto.imageUrl,
+        category: dto.category as any, 
         ingredients: {
           create: (dto.ingredients || []).map((it) => ({
             name: it.name,
@@ -154,7 +153,7 @@ export class RecipeService {
         title: dto.title ?? undefined,
         description: dto.description ?? undefined,
         cookingTime: dto.cookingTime ?? undefined,
-        category: dto.category ?? undefined,
+        category: (dto.category as any as import('../../../generated/prisma').RecipeCategory) ?? undefined,
         imageUrl: dto.imageUrl ?? undefined,
         ingredients: ingredientsOps as any,
         steps: stepsOps as any,

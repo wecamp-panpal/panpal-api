@@ -13,10 +13,11 @@ import { LoginDto, RegisterDto } from './dto/create-auth.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UserResponseDto } from '../../core/user/dto/user-response.dto';
-import { ApiResponse, ApiOperation } from '@nestjs/swagger';
+import { ApiResponse, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
+
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -37,6 +38,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get profile of a user' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
   @Get('profile')
   getProfile(@Request() req): UserResponseDto {
     return req.user;
