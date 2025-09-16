@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +9,8 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { RecipeCategory } from '@prisma/client';
+
 
 class IngredientInputDto {
   @IsString()
@@ -51,9 +54,9 @@ export class CreateRecipeDto {
   @ApiProperty({ example: 'John Doe' })
   authorName?: string;
 
-  @IsString()
-  @ApiProperty({ example: 'Category' })
-  category: string;
+ @IsEnum(RecipeCategory) 
+  @ApiProperty({ enum: RecipeCategory, enumName: 'RecipeCategory' })
+  category: RecipeCategory;
 
   @IsOptional()
   @IsString()

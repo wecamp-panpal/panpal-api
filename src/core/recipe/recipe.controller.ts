@@ -11,6 +11,7 @@ import {
   Request,
   UseInterceptors,
   UploadedFile,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { RecipeService } from './recipe.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
@@ -22,6 +23,8 @@ import {
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
 import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { RecipeCategory } from '@prisma/client';
+
 
 @Controller('recipes')
 export class RecipeController {
@@ -41,7 +44,11 @@ export class RecipeController {
   @ApiOperation({ summary: 'List recipes' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
-  @ApiQuery({ name: 'category', required: false })
+    @ApiQuery({
+    name: 'category',
+    required: false,
+    enum: RecipeCategory, 
+  })
   @ApiQuery({ name: 'search', required: false })
   @ApiResponse({ status: 200, description: 'List recipes' })
   @ApiResponse({ status: 400, description: 'Bad Request' })
@@ -49,7 +56,8 @@ export class RecipeController {
     @Request() req,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('category') category?: string,
+    @Query('category', new ParseEnumPipe(RecipeCategory, { optional: true }))
+    category?: RecipeCategory,
     @Query('search') search?: string,
   ): Promise<RecipeListResponseDto> {
     return this.recipeService.findAll(

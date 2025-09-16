@@ -7,6 +7,8 @@ import {
   RecipeListResponseDto,
   RecipeResponseDto,
 } from './dto/recipe-response.dto';
+import { RecipeCategory } from '@prisma/client';
+
 
 @Injectable()
 export class RecipeService {
@@ -29,7 +31,8 @@ export class RecipeService {
         cookingTime: dto.cookingTime,
         authorName: author?.name || author?.email || 'Anonymous',
         authorId,
-        category: dto.category as any, 
+        category: dto.category,
+        imageUrl: dto.imageUrl,
         ingredients: {
           create: (dto.ingredients || []).map((it) => ({
             name: it.name,
@@ -58,7 +61,7 @@ export class RecipeService {
     params: {
       page?: number;
       limit?: number;
-      category?: string;
+      category?: RecipeCategory;
       search?: string;
     },
     currentUserId?: string,
@@ -153,7 +156,7 @@ export class RecipeService {
         title: dto.title ?? undefined,
         description: dto.description ?? undefined,
         cookingTime: dto.cookingTime ?? undefined,
-        category: (dto.category as any as import('../../../generated/prisma').RecipeCategory) ?? undefined,
+        category: dto.category ?? undefined,
         imageUrl: dto.imageUrl ?? undefined,
         ingredients: ingredientsOps as any,
         steps: stepsOps as any,
