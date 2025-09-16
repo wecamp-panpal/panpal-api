@@ -22,8 +22,8 @@ export class FavoriteService {
   }
 
   async remove(userId: string, recipeId: string): Promise<void> {
-    await this.prisma.favorite.delete({
-      where: { userId_recipeId: { userId, recipeId } },
+    await this.prisma.favorite.deleteMany({
+      where: { userId, recipeId },
     });
   }
 

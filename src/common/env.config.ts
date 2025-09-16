@@ -26,11 +26,6 @@ export default (): Record<string, any> => ({
   NODEMAILER_PASS: process.env.NODEMAILER_PASS,
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'admin@gmail.com',
 
-  // Cloudinary
-  CLOUDINARY_NAME: process.env.CLOUDINARY_NAME,
-  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-
   // Google OAuth
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,

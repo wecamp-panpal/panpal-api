@@ -8,6 +8,7 @@ export class StepDto {
   id: string;
   stepNumber: number;
   instruction: string;
+  imageUrl?: string | null;
 }
 
 export class RecipeResponseDto {
@@ -50,6 +51,7 @@ export class RecipeResponseDto {
       id: s.id,
       stepNumber: s.stepNumber,
       instruction: s.instruction,
+      imageUrl: s.imageUrl,
     }));
 
     if (currentUserId) {
@@ -60,7 +62,7 @@ export class RecipeResponseDto {
       }
       if (Array.isArray(entity.ratings)) {
         const mine = entity.ratings.find(
-          (r: any) => r.userId === currentUserId,
+          (r: any) => r.userId === currentUserId && !r.deletedAt,
         );
         this.myRating = mine ? mine.score : null;
       }

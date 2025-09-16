@@ -46,13 +46,21 @@ export class CommentService {
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.comment.findMany({
-        where: { recipeId },
+        where: {
+          recipeId,
+          deletedAt: null,
+        },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
         include: { user: true },
       }),
-      this.prisma.comment.count({ where: { recipeId } }),
+      this.prisma.comment.count({
+        where: {
+          recipeId,
+          deletedAt: null,
+        },
+      }),
     ]);
 
     return new CommentListResponseDto(
@@ -86,6 +94,12 @@ export class CommentService {
     const existing = await this.prisma.comment.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Comment not found');
     if (existing.userId !== userId) throw new ForbiddenException('Not allowed');
-    await this.prisma.comment.delete({ where: { id } });
+    if (existing.deletedAt) throw new NotFoundException('Comment not found');
+
+    // Soft delete
+    await this.prisma.comment.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 }

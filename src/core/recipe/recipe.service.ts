@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
 import { SupabaseService } from '../../common/supabase.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
@@ -41,6 +45,7 @@ export class RecipeService {
           create: (dto.steps || []).map((s, idx) => ({
             stepNumber: s.stepNumber ?? idx + 1,
             instruction: s.instruction,
+            imageUrl: s.imageUrl,
           })),
         },
       },
@@ -125,7 +130,7 @@ export class RecipeService {
     const existing = await this.prisma.recipe.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Recipe not found');
     if (requesterId && existing.authorId !== requesterId) {
-      throw new NotFoundException('Recipe not found');
+      throw new ForbiddenException('Access denied');
     }
 
     // Replace children if arrays provided
@@ -144,6 +149,7 @@ export class RecipeService {
           create: dto.steps.map((s, idx) => ({
             stepNumber: s.stepNumber ?? idx + 1,
             instruction: s.instruction,
+            imageUrl: s.imageUrl,
           })),
         }
       : undefined;
@@ -174,7 +180,7 @@ export class RecipeService {
     const existing = await this.prisma.recipe.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Recipe not found');
     if (requesterId && existing.authorId !== requesterId) {
-      throw new NotFoundException('Recipe not found');
+      throw new ForbiddenException('Access denied');
     }
     await this.prisma.recipe.delete({ where: { id } });
   }
@@ -187,7 +193,7 @@ export class RecipeService {
     const existing = await this.prisma.recipe.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Recipe not found');
     if (requesterId && existing.authorId !== requesterId) {
-      throw new NotFoundException('Recipe not found');
+      throw new ForbiddenException('Access denied');
     }
 
     const contentType = file.mimetype;

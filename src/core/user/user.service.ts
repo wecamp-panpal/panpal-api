@@ -13,8 +13,8 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UserService {
   constructor(
-    private prisma: PrismaService,
-    private supabase: SupabaseService,
+    private readonly prisma: PrismaService,
+    private readonly supabase: SupabaseService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {

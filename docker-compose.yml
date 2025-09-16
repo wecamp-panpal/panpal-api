@@ -1,0 +1,66 @@
+services:
+  postgres_db:
+    image: postgres:13.5
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    container_name: postgres_db
+    networks:
+      - bridge_network
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  panpal_api:
+    build:
+      context: ./panpal-api
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - SERVER_PORT=${SERVER_PORT}
+      - NODE_ENV=${NODE_ENV}
+    container_name: panpal_api
+    ports:
+      - "3000:3000"
+    networks:
+      - bridge_network
+
+  panpal:
+    build:
+      context: ./panpal
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+    container_name: panpal
+    ports:
+      - "5173:5173"
+    networks:
+      - bridge_network
+    depends_on:
+      - panpal_api
+
+  nginx:
+    image: nginx:latest
+    container_name: proxy_server
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - bridge_network
+    depends_on:
+      - panpal
+      - panpal_api
+
+
+
+volumes:
+  pg-data:
+
+
+
+networks:
+  bridge_network:
+    driver: bridge

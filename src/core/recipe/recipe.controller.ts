@@ -81,9 +81,10 @@ export class RecipeController {
   @ApiResponse({ status: 400, description: 'Bad Request' })
   async update(
     @Param('id') id: string,
+    @Request() req,
     @Body() dto: UpdateRecipeDto,
   ): Promise<RecipeResponseDto> {
-    return this.recipeService.update(id, dto);
+    return this.recipeService.update(id, dto, req.user.id);
   }
 
   @Delete(':id')
@@ -91,8 +92,8 @@ export class RecipeController {
   @ApiOperation({ summary: 'Delete a recipe' })
   @ApiResponse({ status: 200, description: 'Delete a recipe' })
   @ApiResponse({ status: 400, description: 'Bad Request' })
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.recipeService.remove(id);
+  async remove(@Param('id') id: string, @Request() req): Promise<void> {
+    return this.recipeService.remove(id, req.user.id);
   }
 
   @Post(':id/image')
@@ -102,8 +103,9 @@ export class RecipeController {
   @ApiResponse({ status: 200, description: 'Image updated successfully' })
   async uploadImage(
     @Param('id') id: string,
+    @Request() req,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<RecipeResponseDto> {
-    return this.recipeService.updateImage(id, file);
+    return this.recipeService.updateImage(id, file, req.user.id);
   }
 }
