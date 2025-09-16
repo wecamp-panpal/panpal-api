@@ -68,7 +68,11 @@ export class CreateRecipeDto {
 
   @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'https://example.com/image.jpg' })
+  @ApiProperty({
+    example: 'https://example.com/image.jpg',
+    description: 'Image URL (optional if uploading image file)',
+    required: false,
+  })
   imageUrl?: string;
 
   @IsOptional()
@@ -84,4 +88,13 @@ export class CreateRecipeDto {
   @Type(() => StepInputDto)
   @ApiProperty({ example: [{ stepNumber: 1, instruction: 'Instruction' }] })
   steps?: StepInputDto[];
+
+  @IsOptional()
+  @ApiProperty({
+    type: 'string',
+    format: 'binary',
+    description: 'Recipe image file (jpg, jpeg, png, webp - max 5MB)',
+    required: false,
+  })
+  image?: any;
 }

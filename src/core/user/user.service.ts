@@ -7,14 +7,14 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { PrismaService } from '../../common/prisma.service';
-import { SupabaseService } from '../../common/supabase.service';
+import { ImageService } from '../../base/image';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly supabase: SupabaseService,
+    private readonly imageService: ImageService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -142,19 +142,20 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    const contentType = file?.mimetype;
-    const extension = (contentType && contentType.split('/')[1]) || 'png';
-    const filePath = `avatars/${id}.${extension}`;
-
-    const publicUrl = await this.supabase.uploadPublic(
-      filePath,
-      file.buffer,
-      contentType || 'image/png',
+    const uploadResult = await this.imageService.uploadImage(
+      file,
+      {
+        folder: 'avatars',
+        prefix: 'avatar-',
+        maxSize: 2 * 1024 * 1024, // 2MB for avatars
+        allowedTypes: ['jpg', 'jpeg', 'png'],
+      },
+      id,
     );
 
     const user = await this.prisma.user.update({
       where: { id },
-      data: { avatarUrl: publicUrl },
+      data: { avatarUrl: uploadResult.url },
     });
 
     return new UserResponseDto(user);

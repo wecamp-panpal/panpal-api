@@ -11,6 +11,7 @@ import {
   Request,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { RecipeService } from './recipe.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
@@ -20,21 +21,33 @@ import {
   RecipeListResponseDto,
 } from './dto/recipe-response.dto';
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
-import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { RecipeImageInterceptor, StepImageInterceptor } from '../../base/image';
 
 @Controller('recipes')
 export class RecipeController {
   constructor(private readonly recipeService: RecipeService) {}
 
   @Post()
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Create a new recipe' })
+  @UseInterceptors(RecipeImageInterceptor())
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Create a new recipe with optional image upload' })
+  @ApiResponse({ status: 201, description: 'Recipe created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
   async create(
     @Request() req,
     @Body() dto: CreateRecipeDto,
+    @UploadedFile() image?: Express.Multer.File,
   ): Promise<RecipeResponseDto> {
-    return this.recipeService.create(req.user.id, dto);
+    return this.recipeService.create(req.user.id, dto, image);
   }
 
   @Get()
@@ -98,14 +111,35 @@ export class RecipeController {
 
   @Post(':id/image')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(RecipeImageInterceptor())
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload or update recipe image' })
   @ApiResponse({ status: 200, description: 'Image updated successfully' })
   async uploadImage(
     @Param('id') id: string,
     @Request() req,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() image: Express.Multer.File,
   ): Promise<RecipeResponseDto> {
-    return this.recipeService.updateImage(id, file, req.user.id);
+    return this.recipeService.updateImage(id, image, req.user.id);
+  }
+
+  @Post(':recipeId/steps/:stepId/image')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(StepImageInterceptor())
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload image for a recipe step' })
+  @ApiResponse({ status: 200, description: 'Step image updated successfully' })
+  async uploadStepImage(
+    @Param('recipeId') recipeId: string,
+    @Param('stepId') stepId: string,
+    @Request() req,
+    @UploadedFile() stepImage: Express.Multer.File,
+  ): Promise<{ success: boolean; imageUrl: string }> {
+    return this.recipeService.updateStepImage(
+      recipeId,
+      stepId,
+      stepImage,
+      req.user.id,
+    );
   }
 }

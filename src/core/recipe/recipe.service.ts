@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
-import { SupabaseService } from '../../common/supabase.service';
+import { ImageService } from '../../base/image';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import {
@@ -16,16 +16,33 @@ import {
 export class RecipeService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly supabase: SupabaseService,
+    private readonly imageService: ImageService,
   ) {}
 
   async create(
     authorId: string,
     dto: CreateRecipeDto,
+    image?: Express.Multer.File,
   ): Promise<RecipeResponseDto> {
     const author = await this.prisma.user.findUnique({
       where: { id: authorId },
     });
+
+    let imageUrl = dto.imageUrl;
+
+    // Handle image upload if provided (prioritize file upload over URL)
+    if (image) {
+      const uploadResult = await this.imageService.uploadImage(
+        image,
+        {
+          folder: 'recipes',
+          prefix: 'recipe-',
+        },
+        authorId,
+      );
+      imageUrl = uploadResult.url;
+    }
+
     const recipe = await this.prisma.recipe.create({
       data: {
         title: dto.title,
@@ -34,7 +51,7 @@ export class RecipeService {
         authorName: author?.name || author?.email || 'Anonymous',
         authorId,
         category: dto.category,
-        imageUrl: dto.imageUrl,
+        imageUrl,
         ingredients: {
           create: (dto.ingredients || []).map((it) => ({
             name: it.name,
@@ -196,19 +213,18 @@ export class RecipeService {
       throw new ForbiddenException('Access denied');
     }
 
-    const contentType = file.mimetype;
-    const extension = contentType?.split('/')[1] || 'jpg';
-    const filePath = `recipes/${id}.${extension}`;
-
-    const publicUrl = await this.supabase.uploadPublic(
-      filePath,
-      file.buffer,
-      contentType || 'image/jpeg',
+    const uploadResult = await this.imageService.uploadImage(
+      file,
+      {
+        folder: 'recipes',
+        prefix: 'recipe-update-',
+      },
+      requesterId,
     );
 
     const recipe = await this.prisma.recipe.update({
       where: { id },
-      data: { imageUrl: publicUrl },
+      data: { imageUrl: uploadResult.url },
       include: {
         ingredients: true,
         steps: true,
@@ -218,5 +234,47 @@ export class RecipeService {
       },
     });
     return new RecipeResponseDto(recipe);
+  }
+
+  async updateStepImage(
+    recipeId: string,
+    stepId: string,
+    file: Express.Multer.File,
+    requesterId?: string,
+  ): Promise<{ success: boolean; imageUrl: string }> {
+    // Check if recipe exists and user has permission
+    const recipe = await this.prisma.recipe.findUnique({
+      where: { id: recipeId },
+      include: { steps: true },
+    });
+    if (!recipe) throw new NotFoundException('Recipe not found');
+    if (requesterId && recipe.authorId !== requesterId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    // Check if step exists
+    const step = recipe.steps.find((s) => s.id === stepId);
+    if (!step) throw new NotFoundException('Step not found');
+
+    // Upload image
+    const uploadResult = await this.imageService.uploadImage(
+      file,
+      {
+        folder: 'steps',
+        prefix: 'step-',
+      },
+      requesterId,
+    );
+
+    // Update step with image URL
+    await this.prisma.step.update({
+      where: { id: stepId },
+      data: { imageUrl: uploadResult.url },
+    });
+
+    return {
+      success: true,
+      imageUrl: uploadResult.url,
+    };
   }
 }
