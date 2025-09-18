@@ -3,9 +3,16 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { HttpExceptionFilter } from './common/http-exception.config';
+import { ConfigService } from '@nestjs/config';
+import compression from 'compression';
+
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['error', 'warn', 'log', 'verbose', 'debug'],
+  });
+  const configService = app.get(ConfigService);
   const logger = new Logger(bootstrap.name);
 
   const port = process.env.API_SERVICE_PORT ?? 3000;
@@ -14,15 +21,28 @@ async function bootstrap() {
 
   app.setGlobalPrefix(global_prefix);
 
+  // Enable compression
+  app.use(compression());
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
       transform: true,
     }),
   );
 
-  app.enableCors();
+  app.useGlobalFilters(new HttpExceptionFilter(configService));
+
+  // Rate limiting is configured in app.module.ts via APP_GUARD
+
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+      'http://localhost:5173',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true,
+  });
 
   const config = new DocumentBuilder()
     .setTitle(name)

@@ -100,12 +100,45 @@ export class RecipeService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          cookingTime: true,
+          authorName: true,
+          authorId: true,
+          category: true,
+          imageUrl: true,
+          ratingAvg: true,
+          ratingCount: true,
+          createdAt: true,
+          updatedAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            },
+          },
           ingredients: true,
-          steps: true,
-          comments: true,
-          ratings: true,
-          favorites: true,
+          steps: {
+            orderBy: { stepNumber: 'asc' },
+          },
+          _count: {
+            select: {
+              comments: true,
+              ratings: { where: { deletedAt: null } },
+              favorites: true,
+            },
+          },
+          // Only load user's favorite if currentUserId is provided
+          ...(currentUserId && {
+            favorites: {
+              where: { userId: currentUserId },
+              select: { id: true, userId: true },
+            },
+          }),
         },
       }),
       this.prisma.recipe.count({ where }),
@@ -128,11 +161,59 @@ export class RecipeService {
     const recipe = await this.prisma.recipe.findUnique({
       where: { id },
       include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
         ingredients: true,
-        steps: true,
-        comments: true,
-        ratings: true,
-        favorites: true,
+        steps: {
+          orderBy: { stepNumber: 'asc' },
+        },
+        comments: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 10, // Only load latest 10 comments for performance
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        ratings: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 10, // Only load latest 10 ratings for performance
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        ...(currentUserId && {
+          favorites: {
+            where: { userId: currentUserId },
+            select: { id: true, userId: true },
+          },
+        }),
+        _count: {
+          select: {
+            comments: { where: { deletedAt: null } },
+            ratings: { where: { deletedAt: null } },
+            favorites: true,
+          },
+        },
       },
     });
     if (!recipe) throw new NotFoundException('Recipe not found');

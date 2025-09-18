@@ -19,46 +19,55 @@ export class RatingService {
     if (typeof score !== 'number' || score < 1 || score > 5) {
       throw new BadRequestException('Score must be between 1 and 5');
     }
-    const recipe = await this.prisma.recipe.findUnique({
-      where: { id: recipeId },
-    });
-    if (!recipe) throw new NotFoundException('Recipe not found');
 
-    await this.prisma.rating.upsert({
-      where: { recipeId_userId: { recipeId, userId } },
-      create: {
-        recipeId,
-        userId,
-        score,
-        imageUrls: imageUrls || [],
-        comment: comment || null,
-      },
-      update: {
-        score,
-        imageUrls: imageUrls || [],
-        comment: comment || null,
-        deletedAt: null,
-      },
-    });
+    // Use transaction to ensure data consistency and avoid race conditions
+    return await this.prisma.$transaction(async (tx) => {
+      // Verify recipe exists
+      const recipe = await tx.recipe.findUnique({
+        where: { id: recipeId },
+      });
+      if (!recipe) throw new NotFoundException('Recipe not found');
 
-    // recalc average and count (exclude soft deleted)
-    const agg = await this.prisma.rating.aggregate({
-      where: {
-        recipeId,
-        deletedAt: null,
-      },
-      _avg: { score: true },
-      _count: { score: true },
-    });
-    await this.prisma.recipe.update({
-      where: { id: recipeId },
-      data: {
-        ratingAvg: agg._avg.score ?? 0,
-        ratingCount: agg._count.score ?? 0,
-      },
-    });
+      // Upsert the rating
+      await tx.rating.upsert({
+        where: { recipeId_userId: { recipeId, userId } },
+        create: {
+          recipeId,
+          userId,
+          score,
+          imageUrls: imageUrls || [],
+          comment: comment || null,
+        },
+        update: {
+          score,
+          imageUrls: imageUrls || [],
+          comment: comment || null,
+          deletedAt: null,
+          updatedAt: new Date(),
+        },
+      });
 
-    return { success: true };
+      // Recalculate average and count (exclude soft deleted) in same transaction
+      const agg = await tx.rating.aggregate({
+        where: {
+          recipeId,
+          deletedAt: null,
+        },
+        _avg: { score: true },
+        _count: { score: true },
+      });
+
+      // Update recipe statistics
+      await tx.recipe.update({
+        where: { id: recipeId },
+        data: {
+          ratingAvg: agg._avg.score ?? 0,
+          ratingCount: agg._count.score ?? 0,
+        },
+      });
+
+      return { success: true };
+    });
   }
 
   async list(recipeId: string, params: { page?: number; limit?: number }) {
@@ -101,35 +110,38 @@ export class RatingService {
   }
 
   async remove(userId: string, recipeId: string) {
-    const rating = await this.prisma.rating.findUnique({
-      where: { recipeId_userId: { recipeId, userId } },
-    });
-    if (!rating) throw new NotFoundException('Rating not found');
+    return await this.prisma.$transaction(async (tx) => {
+      const rating = await tx.rating.findUnique({
+        where: { recipeId_userId: { recipeId, userId } },
+      });
+      if (!rating) throw new NotFoundException('Rating not found');
+      if (rating.deletedAt) throw new NotFoundException('Rating not found');
 
-    // Soft delete
-    await this.prisma.rating.update({
-      where: { recipeId_userId: { recipeId, userId } },
-      data: { deletedAt: new Date() },
-    });
+      // Soft delete
+      await tx.rating.update({
+        where: { recipeId_userId: { recipeId, userId } },
+        data: { deletedAt: new Date() },
+      });
 
-    // Recalc average and count (exclude soft deleted)
-    const agg = await this.prisma.rating.aggregate({
-      where: {
-        recipeId,
-        deletedAt: null,
-      },
-      _avg: { score: true },
-      _count: { score: true },
-    });
+      // Recalculate average and count (exclude soft deleted) in same transaction
+      const agg = await tx.rating.aggregate({
+        where: {
+          recipeId,
+          deletedAt: null,
+        },
+        _avg: { score: true },
+        _count: { score: true },
+      });
 
-    await this.prisma.recipe.update({
-      where: { id: recipeId },
-      data: {
-        ratingAvg: agg._avg.score ?? 0,
-        ratingCount: agg._count.score ?? 0,
-      },
-    });
+      await tx.recipe.update({
+        where: { id: recipeId },
+        data: {
+          ratingAvg: agg._avg.score ?? 0,
+          ratingCount: agg._count.score ?? 0,
+        },
+      });
 
-    return { success: true };
+      return { success: true };
+    });
   }
 }
