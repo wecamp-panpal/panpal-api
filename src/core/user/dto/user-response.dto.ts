@@ -4,15 +4,23 @@ export class UserResponseDto {
   id: string;
   email: string;
   name: string | null;
-  avatarUrl?: string | null;
+  avatar_url?: string | null;
+  country?: string | null;
   role?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 
   @Exclude()
   passwordHash?: string;
 
-  constructor(partial: Partial<UserResponseDto>) {
-    Object.assign(this, partial);
+  constructor(user: any) {
+    this.id = user.id;
+    this.email = user.email;
+    this.name = user.name;
+    this.avatar_url = user.avatarUrl;
+    this.country = user.country;
+    this.role = user.role;
+    this.created_at = user.createdAt;
+    this.updated_at = user.updatedAt;
   }
 }
