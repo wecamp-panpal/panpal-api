@@ -14,9 +14,5 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  avatarUrl?: string;
-
-  @IsOptional()
-  @IsString()
   country?: string;
 }
