@@ -23,6 +23,7 @@ class IngredientInputDto {
 
 class StepInputDto {
   @IsOptional()
+    @Type(() => Number)  
   @IsInt()
   @Min(1)
   @ApiProperty({ example: 1 })

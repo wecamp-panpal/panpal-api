@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
 import { RatingService } from './rating.service';
-import { ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 class UpsertRatingDto {
   recipeId: string;
@@ -20,6 +20,7 @@ class UpsertRatingDto {
 }
 
 @Controller('ratings')
+@ApiBearerAuth()
 export class RatingController {
   constructor(private readonly ratingService: RatingService) {}
 

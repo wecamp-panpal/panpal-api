@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { FavoriteService } from './favorite.service';
 import { JwtAuthGuard } from '../../base/auth/guards/jwt-auth.guard';
-import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { RecipeListResponseDto } from '../recipe/dto/recipe-response.dto';
 
 class ToggleFavoriteDto {
@@ -19,6 +19,7 @@ class ToggleFavoriteDto {
 
 @Controller('favorites')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class FavoriteController {
   constructor(private readonly favoriteService: FavoriteService) {}
 
