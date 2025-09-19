@@ -38,6 +38,7 @@ export class UserService {
         passwordHash,
         name: createUserDto.name,
         avatarUrl: createUserDto.avatarUrl,
+        country: createUserDto.country,
         role: createUserDto.role || 'user',
       },
     });

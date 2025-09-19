@@ -10,8 +10,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -27,21 +27,21 @@ enum RecipeCategory {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  passwordHash String  @map("password_hash")
-  name        String?
-  avatarUrl   String?  @map("avatar_url")
-  country     String?
-  role        String?  @default("user") 
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  avatarUrl    String?  @map("avatar_url")
+  country      String?
+  role         String?  @default("user")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  recipes    Recipe[]
-  comments   Comment[]
-  ratings    Rating[]
-  favorites  Favorite[]
+  recipes   Recipe[]
+  comments  Comment[]
+  ratings   Rating[]
+  favorites Favorite[]
 
   // Indexes
   @@index([email])
@@ -113,7 +113,7 @@ model Rating {
   userId    String    @map("user_id")
   score     Int
   imageUrls String[]  @map("image_urls") // For user review images
-  comment   String?   // User review comment
+  comment   String? // User review comment
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at") // Soft delete
@@ -159,4 +159,26 @@ model Favorite {
   @@index([userId])
   @@index([recipeId])
   @@map("favorites")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String // RECIPE_CREATED, RATING_SUBMITTED, USER_LOGIN, etc.
+  resource   String // recipe, rating, user, auth, etc.
+  resourceId String?  @map("resource_id")
+  oldValues  String?  @map("old_values") // JSON string
+  newValues  String?  @map("new_values") // JSON string
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  metadata   String? // Additional JSON data
+  timestamp  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+  @@index([userId, action])
+  @@index([resource, action])
+  @@map("audit_logs")
 }

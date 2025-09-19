@@ -3,11 +3,12 @@ import { RecipeService } from './recipe.service';
 import { RecipeController } from './recipe.controller';
 import { PrismaService } from '../../common/prisma.service';
 import { ImageModule } from '../../base/image';
+import { EnhancedCacheService } from '../../common/cache/enhanced-cache.service';
 
 @Module({
   imports: [ImageModule],
   controllers: [RecipeController],
-  providers: [RecipeService, PrismaService],
+  providers: [RecipeService, PrismaService, EnhancedCacheService],
   exports: [RecipeService],
 })
 export class RecipeModule {}

@@ -4,6 +4,7 @@ import {
   ExceptionFilter,
   HttpException,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
@@ -31,17 +32,39 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
 
     let res_content: object;
-    if (typeof data === 'string') {
-      res_content = { message: data };
+    
+    // Handle specific exception types with better messages
+    if (exception instanceof UnauthorizedException) {
+      res_content = {
+        message: 'Access denied. Please provide a valid authentication token.',
+        error: 'Unauthorized',
+        statusCode: status,
+      };
+    } else if (typeof data === 'string') {
+      res_content = { 
+        message: data,
+        error: name,
+        statusCode: status,
+      };
     } else if (data instanceof Error) {
       res_content = {
         message: data.message,
+        error: name,
+        statusCode: status,
       };
     } else {
-      res_content = omit(data, ['statusCode', 'error']);
+      res_content = {
+        ...omit(data, ['statusCode', 'error']),
+        error: name,
+        statusCode: status,
+      };
     }
 
-    if (this.configService.get<string>('NODE_ENV') === 'development') {
+    // Only add stack trace in development mode and for server errors (5xx)
+    const isDevelopment = this.configService.get<string>('NODE_ENV') === 'development';
+    const isServerError = status >= 500;
+    
+    if (isDevelopment && isServerError) {
       assign(res_content, { stack: exception.stack });
     }
 

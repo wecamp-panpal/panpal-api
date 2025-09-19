@@ -11,12 +11,18 @@ import {
   RecipeListResponseDto,
   RecipeResponseDto,
 } from './dto/recipe-response.dto';
+import {
+  EnhancedCacheService,
+  CacheKeys,
+  CacheTTL,
+} from '../../common/cache/enhanced-cache.service';
 
 @Injectable()
 export class RecipeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly imageService: ImageService,
+    private readonly cacheService: EnhancedCacheService,
   ) {}
 
   async create(
@@ -88,35 +94,88 @@ export class RecipeService {
   ): Promise<RecipeListResponseDto> {
     const page = Math.max(1, params.page || 1);
     const limit = Math.min(50, Math.max(1, params.limit || 10));
-    const skip = (page - 1) * limit;
-    const where: any = {};
-    if (params.category) where.category = params.category;
-    if (params.search)
-      where.title = { contains: params.search, mode: 'insensitive' };
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.recipe.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-        include: {
-          ingredients: true,
-          steps: true,
-          comments: true,
-          ratings: true,
-          favorites: true,
-        },
-      }),
-      this.prisma.recipe.count({ where }),
-    ]);
+    // Generate cache key
+    const cacheKey = CacheKeys.recipeList(
+      params.category,
+      params.search,
+      page,
+      limit,
+      currentUserId,
+    );
 
-    return new RecipeListResponseDto(
-      items.map((r) => new RecipeResponseDto(r, currentUserId)),
+    // Try cache first, then fetch if needed
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const skip = (page - 1) * limit;
+        const where: any = {};
+        if (params.category) where.category = params.category;
+        if (params.search)
+          where.title = { contains: params.search, mode: 'insensitive' };
+
+        const [items, total] = await this.prisma.$transaction([
+          this.prisma.recipe.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take: limit,
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              cookingTime: true,
+              authorName: true,
+              authorId: true,
+              category: true,
+              imageUrl: true,
+              ratingAvg: true,
+              ratingCount: true,
+              createdAt: true,
+              updatedAt: true,
+              author: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  avatarUrl: true,
+                },
+              },
+              ingredients: true,
+              steps: {
+                orderBy: { stepNumber: 'asc' },
+              },
+              _count: {
+                select: {
+                  comments: true,
+                  ratings: { where: { deletedAt: null } },
+                  favorites: true,
+                },
+              },
+              // Only load user's favorite if currentUserId is provided
+              ...(currentUserId && {
+                favorites: {
+                  where: { userId: currentUserId },
+                  select: { id: true, userId: true },
+                },
+              }),
+            },
+          }),
+          this.prisma.recipe.count({ where }),
+        ]);
+
+        return new RecipeListResponseDto(
+          items.map((r) => new RecipeResponseDto(r, currentUserId)),
+          {
+            page,
+            limit,
+            total,
+          },
+        );
+      },
       {
-        page,
-        limit,
-        total,
+        ttl: CacheTTL.RECIPE_LIST,
+        bucket: 'recipes',
       },
     );
   }
@@ -125,18 +184,77 @@ export class RecipeService {
     id: string,
     currentUserId?: string,
   ): Promise<RecipeResponseDto> {
-    const recipe = await this.prisma.recipe.findUnique({
-      where: { id },
-      include: {
-        ingredients: true,
-        steps: true,
-        comments: true,
-        ratings: true,
-        favorites: true,
+    const cacheKey = CacheKeys.recipeDetail(id, currentUserId);
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const recipe = await this.prisma.recipe.findUnique({
+          where: { id },
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatarUrl: true,
+              },
+            },
+            ingredients: true,
+            steps: {
+              orderBy: { stepNumber: 'asc' },
+            },
+            comments: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: 'desc' },
+              take: 10, // Only load latest 10 comments for performance
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+            ratings: {
+              where: { deletedAt: null },
+              orderBy: { createdAt: 'desc' },
+              take: 10, // Only load latest 10 ratings for performance
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+            ...(currentUserId && {
+              favorites: {
+                where: { userId: currentUserId },
+                select: { id: true, userId: true },
+              },
+            }),
+            _count: {
+              select: {
+                comments: { where: { deletedAt: null } },
+                ratings: { where: { deletedAt: null } },
+                favorites: true,
+              },
+            },
+          },
+        });
+        if (!recipe) throw new NotFoundException('Recipe not found');
+        return new RecipeResponseDto(recipe, currentUserId);
       },
-    });
-    if (!recipe) throw new NotFoundException('Recipe not found');
-    return new RecipeResponseDto(recipe, currentUserId);
+      {
+        ttl: CacheTTL.RECIPE_DETAIL,
+        bucket: 'recipes',
+      },
+    );
   }
 
   async update(
@@ -190,6 +308,10 @@ export class RecipeService {
         favorites: true,
       },
     });
+
+    // Invalidate recipe caches
+    await this.invalidateRecipeCaches(id);
+
     return new RecipeResponseDto(recipe, requesterId);
   }
 
@@ -200,6 +322,9 @@ export class RecipeService {
       throw new ForbiddenException('Access denied');
     }
     await this.prisma.recipe.delete({ where: { id } });
+
+    // Invalidate recipe caches
+    await this.invalidateRecipeCaches(id);
   }
 
   async updateImage(
@@ -276,5 +401,32 @@ export class RecipeService {
       success: true,
       imageUrl: uploadResult.url,
     };
+  }
+
+  /**
+   * Invalidate recipe-related caches
+   */
+  private async invalidateRecipeCaches(recipeId: string): Promise<void> {
+    try {
+      // Invalidate specific recipe detail caches
+      await this.cacheService.invalidatePattern(
+        CacheKeys.recipePattern(recipeId),
+        'recipes',
+      );
+
+      // Invalidate recipe lists (all categories, searches, etc.)
+      await this.cacheService.invalidatePattern('recipes:list:*', 'recipes');
+
+      // Invalidate trending recipes
+      await this.cacheService.invalidatePattern(
+        'recipes:trending:*',
+        'recipes',
+      );
+
+      // Note: User-specific caches (favorites) will be invalidated by their respective services
+    } catch (error) {
+      // Log but don't throw - cache invalidation shouldn't break the main operation
+      console.error('Cache invalidation failed:', error);
+    }
   }
 }

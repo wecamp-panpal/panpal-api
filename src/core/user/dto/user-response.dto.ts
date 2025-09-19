@@ -5,6 +5,7 @@ export class UserResponseDto {
   email: string;
   name: string | null;
   avatarUrl?: string | null;
+  country?: string | null;
   role?: string | null;
   createdAt: Date;
   updatedAt: Date;
