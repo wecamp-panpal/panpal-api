@@ -321,7 +321,7 @@ export class RecipeService {
       },
     });
 
-    // Invalidate recipe caches
+    // Invalidate recipe caches after update
     await this.invalidateRecipeCaches(id);
 
     return new RecipeResponseDto(recipe, requesterId);
@@ -370,7 +370,11 @@ export class RecipeService {
         favorites: true,
       },
     });
-    return new RecipeResponseDto(recipe);
+    
+    // Invalidate recipe caches after image update
+    await this.invalidateRecipeCaches(id);
+    
+    return new RecipeResponseDto(recipe, requesterId);
   }
 
   async updateStepImage(
@@ -420,25 +424,33 @@ export class RecipeService {
    */
   private async invalidateRecipeCaches(recipeId: string): Promise<void> {
     try {
-      // Invalidate specific recipe detail caches
-      await this.cacheService.invalidatePattern(
-        CacheKeys.recipePattern(recipeId),
-        'recipes',
-      );
+      console.log(`🗑️ Invalidating caches for recipe: ${recipeId}`);
 
-      // Invalidate recipe lists (all categories, searches, etc.)
-      await this.cacheService.invalidatePattern('recipes:list:*', 'recipes');
+      // Invalidate in both 'default' and 'recipes' buckets
+      const buckets = ['default', 'recipes'];
+      
+      for (const bucket of buckets) {
+        // Invalidate specific recipe detail caches
+        await this.cacheService.invalidatePattern(
+          CacheKeys.recipePattern(recipeId),
+          bucket,
+        );
 
-      // Invalidate trending recipes
-      await this.cacheService.invalidatePattern(
-        'recipes:trending:*',
-        'recipes',
-      );
+        // Invalidate recipe lists (all categories, searches, etc.)
+        await this.cacheService.invalidatePattern('recipes:list:*', bucket);
+        await this.cacheService.invalidatePattern('recipe:*', bucket);
 
-      // Note: User-specific caches (favorites) will be invalidated by their respective services
+        // Invalidate trending recipes
+        await this.cacheService.invalidatePattern('recipes:trending:*', bucket);
+        
+        // Invalidate user favorites (since recipe data changed)
+        await this.cacheService.invalidatePattern('user:favorites:*', bucket);
+      }
+
+      console.log(`✅ Cache invalidation completed for recipe: ${recipeId}`);
     } catch (error) {
       // Log but don't throw - cache invalidation shouldn't break the main operation
-      console.error('Cache invalidation failed:', error);
+      console.error(`❌ Cache invalidation failed for recipe ${recipeId}:`, error);
     }
   }
 }
