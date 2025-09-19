@@ -117,8 +117,13 @@ export class RecipeService {
         const skip = (page - 1) * limit;
         const where: any = {};
         if (params.category) where.category = params.category;
-        if (params.search)
-          where.title = { contains: params.search, mode: 'insensitive' };
+        if (params.search) {
+          where.OR = [
+            { title: { contains: params.search, mode: 'insensitive' } },
+            { description: { contains: params.search, mode: 'insensitive' } },
+            { authorName: { contains: params.search, mode: 'insensitive' } },
+          ];
+        }
         if (params.authorId) where.authorId = params.authorId;
 
         const [items, total] = await this.prisma.$transaction([
