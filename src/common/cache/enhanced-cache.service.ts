@@ -25,7 +25,7 @@ export class EnhancedCacheService {
       } else {
         this.logger.debug(`Cache MISS: ${fullKey}`);
       }
-      return data || null;
+      return data ?? null;
     } catch (error) {
       this.logger.error(`Cache get failed for ${key}: ${error.message}`);
       return null;
