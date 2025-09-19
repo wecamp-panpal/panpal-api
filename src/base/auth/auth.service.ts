@@ -29,10 +29,12 @@ export class AuthService {
       email: registerDto.email,
       password: registerDto.password,
       name: registerDto.name,
+      country: registerDto.country,
     });
 
     // Tạo JWT token
     const accessToken = await this.generateAccessToken(user);
+    console.log('Token:', accessToken);
 
     return new AuthResponseDto(user, accessToken);
   }

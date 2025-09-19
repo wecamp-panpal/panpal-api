@@ -27,10 +27,30 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        ttl: configService.get('CACHE_TTL', 300), // 5 minutes default
-        max: configService.get('CACHE_MAX_ITEMS', 1000),
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const isRedisEnabled = configService.get('REDIS_URL');
+
+        if (isRedisEnabled) {
+          // Redis configuration
+          const redisStore = await import('cache-manager-redis-store');
+          return {
+            store: redisStore.default,
+            url: configService.get('REDIS_URL'),
+            ttl: configService.get('CACHE_TTL', 300), // 5 minutes
+            max: configService.get('CACHE_MAX_ITEMS', 1000),
+            // Redis specific options
+            retryDelayOnFailover: 100,
+            enableReadyCheck: true,
+            maxRetriesPerRequest: 3,
+          };
+        } else {
+          // In-memory cache fallback
+          return {
+            ttl: configService.get('CACHE_TTL', 300),
+            max: configService.get('CACHE_MAX_ITEMS', 1000),
+          };
+        }
+      },
       inject: [ConfigService],
     }),
     ThrottlerModule.forRootAsync({
