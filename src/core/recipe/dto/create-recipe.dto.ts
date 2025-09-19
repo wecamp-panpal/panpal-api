@@ -90,12 +90,5 @@ export class CreateRecipeDto {
   @ApiProperty({ example: [{ stepNumber: 1, instruction: 'Instruction' }] })
   steps?: StepInputDto[];
 
-  @IsOptional()
-  @ApiProperty({
-    type: 'string',
-    format: 'binary',
-    description: 'Recipe image file (jpg, jpeg, png, webp - max 5MB)',
-    required: false,
-  })
-  image?: any;
+ 
 }
