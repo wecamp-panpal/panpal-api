@@ -109,9 +109,14 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
+    const updateData: any = {};
+    if (updateUserDto.name !== undefined) updateData.name = updateUserDto.name;
+    if (updateUserDto.email !== undefined) updateData.email = updateUserDto.email;
+    if (updateUserDto.country !== undefined) updateData.country = updateUserDto.country;
+
     const user = await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data: updateData,
     });
 
     return new UserResponseDto(user);
@@ -148,8 +153,8 @@ export class UserService {
       {
         folder: 'avatars',
         prefix: 'avatar-',
-        maxSize: 2 * 1024 * 1024, // 2MB for avatars
-        allowedTypes: ['jpg', 'jpeg', 'png'],
+        maxSize: 10 * 1024 * 1024, // 10MB for avatars
+        allowedTypes: ['jpg', 'jpeg', 'png', 'webp'],
       },
       id,
     );
