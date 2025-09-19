@@ -80,6 +80,10 @@ export class RecipeService {
         favorites: true,
       },
     });
+
+    // invalidate recipe caches sau khi tạo 1 recipe mới
+    await this.invalidateRecipeCaches(recipe.id);
+
     return new RecipeResponseDto(recipe, authorId);
   }
 
@@ -89,6 +93,7 @@ export class RecipeService {
       limit?: number;
       category?: string;
       search?: string;
+      authorId?: string;
     },
     currentUserId?: string,
   ): Promise<RecipeListResponseDto> {
@@ -102,6 +107,7 @@ export class RecipeService {
       page,
       limit,
       currentUserId,
+      params.authorId,
     );
 
     // Try cache first, then fetch if needed
@@ -113,6 +119,7 @@ export class RecipeService {
         if (params.category) where.category = params.category;
         if (params.search)
           where.title = { contains: params.search, mode: 'insensitive' };
+        if (params.authorId) where.authorId = params.authorId;
 
         const [items, total] = await this.prisma.$transaction([
           this.prisma.recipe.findMany({

@@ -1,6 +1,3 @@
-// import { PartialType } from '@nestjs/mapped-types';
-// import { CreateUserDto } from './create-user.dto';
-
 import { IsString, IsOptional, IsEmail } from 'class-validator';
 
 export class UpdateUserDto {

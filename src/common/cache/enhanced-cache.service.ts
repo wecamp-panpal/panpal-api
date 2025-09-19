@@ -25,7 +25,7 @@ export class EnhancedCacheService {
       } else {
         this.logger.debug(`Cache MISS: ${fullKey}`);
       }
-      return data || null;
+      return data ?? null;
     } catch (error) {
       this.logger.error(`Cache get failed for ${key}: ${error.message}`);
       return null;
@@ -120,8 +120,9 @@ export class CacheKeys {
     page = 1,
     limit = 10,
     userId?: string,
+    authorId?: string,
   ): string {
-    const filters = [category, search, userId].filter(Boolean).join(':');
+    const filters = [category, search, userId, authorId].filter(Boolean).join(':');
     return `recipes:list:${filters}:${page}:${limit}`;
   }
 
