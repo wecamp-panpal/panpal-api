@@ -56,6 +56,7 @@ export class RecipeController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'authorId', required: false })
   @ApiResponse({ status: 200, description: 'List recipes' })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   async findAll(
@@ -64,6 +65,7 @@ export class RecipeController {
     @Query('limit') limit?: string,
     @Query('category') category?: string,
     @Query('search') search?: string,
+    @Query('authorId') authorId?: string,
   ): Promise<RecipeListResponseDto> {
     return this.recipeService.findAll(
       {
@@ -71,6 +73,7 @@ export class RecipeController {
         limit: limit ? parseInt(limit, 10) : 10,
         category,
         search,
+        authorId,
       },
       req.user?.id,
     );
