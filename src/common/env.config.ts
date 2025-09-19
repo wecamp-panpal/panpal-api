@@ -21,11 +21,6 @@ export default (): Record<string, any> => ({
   JWT_RT_SECRET: process.env.JWT_RT_SECRET || 'secret',
   JWT_RT_EXPIRED: process.env.JWT_RT_EXPIRED || '1d',
 
-  // Email Service
-  NODEMAILER_USER: process.env.NODEMAILER_USER,
-  NODEMAILER_PASS: process.env.NODEMAILER_PASS,
-  SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'admin@gmail.com',
-
   // Google OAuth
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,

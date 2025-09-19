@@ -78,7 +78,6 @@ class UpsertRatingDto {
 @ApiTags('Ratings')
 @ApiBearerAuth()
 @Controller('ratings')
-@ApiBearerAuth()
 export class RatingController {
   constructor(private readonly ratingService: RatingService) {}
 

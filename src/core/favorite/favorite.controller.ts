@@ -37,7 +37,6 @@ class ToggleFavoriteDto {
 @ApiBearerAuth()
 @Controller('favorites')
 @UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class FavoriteController {
   constructor(private readonly favoriteService: FavoriteService) {}
 
