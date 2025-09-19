@@ -31,6 +31,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^6.0.0",
     "@nestjs/swagger": "^11.2.0",
+    "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.16.1",
     "@supabase/supabase-js": "^2.57.4",
     "axios": "^1.11.0",
