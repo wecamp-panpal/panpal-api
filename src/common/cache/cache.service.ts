@@ -1,7 +1,7 @@
 import { DeleteDateProps, GetDataProps, SetDataProps } from './cache';
-import { CACHE_MANAGER } from "@nestjs/cache-manager";
-import { Inject, Injectable, Logger, NotFoundException } from "@nestjs/common";
-import type { Cache } from "cache-manager";
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { Cache } from 'cache-manager';
 
 @Injectable()
 export class CacheService {
@@ -40,7 +40,7 @@ export class CacheService {
         throw new NotFoundException('Data not found');
       }
       return data;
-      } catch (error) {
+    } catch (error) {
       this.logger.error(`Failed to get cache data: ${error.message}`);
       throw error;
     }

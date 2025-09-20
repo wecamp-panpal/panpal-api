@@ -111,8 +111,10 @@ export class UserService {
 
     const updateData: any = {};
     if (updateUserDto.name !== undefined) updateData.name = updateUserDto.name;
-    if (updateUserDto.email !== undefined) updateData.email = updateUserDto.email;
-    if (updateUserDto.country !== undefined) updateData.country = updateUserDto.country;
+    if (updateUserDto.email !== undefined)
+      updateData.email = updateUserDto.email;
+    if (updateUserDto.country !== undefined)
+      updateData.country = updateUserDto.country;
 
     const user = await this.prisma.user.update({
       where: { id },

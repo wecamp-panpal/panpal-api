@@ -122,7 +122,9 @@ export class CacheKeys {
     userId?: string,
     authorId?: string,
   ): string {
-    const filters = [category, search, userId, authorId].filter(Boolean).join(':');
+    const filters = [category, search, userId, authorId]
+      .filter(Boolean)
+      .join(':');
     return `recipes:list:${filters}:${page}:${limit}`;
   }
 
@@ -138,8 +140,11 @@ export class CacheKeys {
     return `user:favorites:${userId}:${page}:${limit}`;
   }
 
-  static trendingRecipes(timeframe = '24h'): string {
-    return `recipes:trending:${timeframe}`;
+  // static trendingRecipes(timeframe = '24h'): string {
+  //   return `recipes:trending:${timeframe}`;
+  // }
+  static trendingRecipes(type = 'by_ratings', limit = 10): string {
+    return `recipes:trending:${type}:${limit}`;
   }
 
   static userPattern(userId: string): string {

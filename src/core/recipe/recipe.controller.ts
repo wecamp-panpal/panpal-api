@@ -79,6 +79,29 @@ export class RecipeController {
     );
   }
 
+  @Get('trending')
+  @ApiOperation({
+    summary: 'Get trending recipes',
+    description: 'Get top recipes by rating count and average rating',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of trending recipes to return (default: 10, max: 50)',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trending recipes retrieved successfully',
+    type: RecipeListResponseDto,
+  })
+  async getTrending(
+    @Query('limit') limit?: string,
+  ): Promise<RecipeListResponseDto> {
+    const parsedLimit = Math.min(50, Math.max(1, parseInt(limit || '10', 10)));
+    return this.recipeService.findTrending(parsedLimit);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get recipe by id' })
   @ApiResponse({ status: 200, description: 'Get recipe by id' })

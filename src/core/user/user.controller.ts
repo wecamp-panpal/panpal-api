@@ -12,7 +12,12 @@ import {
   UploadedFile,
   Response,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AvatarImageInterceptor } from '../../base/image';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';

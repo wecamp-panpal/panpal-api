@@ -28,7 +28,7 @@ class ToggleFavoriteDto {
   @IsNotEmpty()
   @ApiProperty({
     description: 'Recipe ID to add to favorites',
-    example: 'ebc48b57-fbae-4bb4-b5a8-d662040178ae'
+    example: 'ebc48b57-fbae-4bb4-b5a8-d662040178ae',
   })
   recipeId: string;
 }

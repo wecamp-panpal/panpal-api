@@ -87,6 +87,53 @@ export class RecipeService {
     return new RecipeResponseDto(recipe, authorId);
   }
 
+  // Add to src/core/recipe/recipe.service.ts
+
+  async findTrending(limit = 10): Promise<RecipeListResponseDto> {
+    // Get recipes with highest rating count, then by rating average
+    const recipes = await this.prisma.recipe.findMany({
+      where: {
+        ratingCount: { gt: 0 }, // Only recipes with ratings
+      },
+      orderBy: [
+        { ratingCount: 'desc' }, // Most rated first
+        { ratingAvg: 'desc' }, // Then by highest rating
+        { createdAt: 'desc' }, // Then by newest
+      ],
+      take: limit,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        ingredients: true,
+        steps: {
+          orderBy: { stepNumber: 'asc' },
+        },
+        _count: {
+          select: {
+            comments: { where: { deletedAt: null } },
+            ratings: { where: { deletedAt: null } },
+            favorites: true,
+          },
+        },
+      },
+    });
+
+    return new RecipeListResponseDto(
+      recipes.map((r) => new RecipeResponseDto(r)),
+      {
+        page: 1,
+        limit,
+        total: recipes.length,
+      },
+    );
+  }
+
   async findAll(
     params: {
       page?: number;
@@ -370,10 +417,10 @@ export class RecipeService {
         favorites: true,
       },
     });
-    
+
     // Invalidate recipe caches after image update
     await this.invalidateRecipeCaches(id);
-    
+
     return new RecipeResponseDto(recipe, requesterId);
   }
 
@@ -428,7 +475,7 @@ export class RecipeService {
 
       // Invalidate in both 'default' and 'recipes' buckets
       const buckets = ['default', 'recipes'];
-      
+
       for (const bucket of buckets) {
         // Invalidate specific recipe detail caches
         await this.cacheService.invalidatePattern(
@@ -440,9 +487,9 @@ export class RecipeService {
         await this.cacheService.invalidatePattern('recipes:list:*', bucket);
         await this.cacheService.invalidatePattern('recipe:*', bucket);
 
-        // Invalidate trending recipes
+        // Invalidate all trending recipes (all types and limits)
         await this.cacheService.invalidatePattern('recipes:trending:*', bucket);
-        
+
         // Invalidate user favorites (since recipe data changed)
         await this.cacheService.invalidatePattern('user:favorites:*', bucket);
       }
@@ -450,7 +497,10 @@ export class RecipeService {
       console.log(`✅ Cache invalidation completed for recipe: ${recipeId}`);
     } catch (error) {
       // Log but don't throw - cache invalidation shouldn't break the main operation
-      console.error(`❌ Cache invalidation failed for recipe ${recipeId}:`, error);
+      console.error(
+        `❌ Cache invalidation failed for recipe ${recipeId}:`,
+        error,
+      );
     }
   }
 }

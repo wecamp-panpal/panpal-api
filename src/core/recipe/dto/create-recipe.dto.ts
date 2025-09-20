@@ -23,7 +23,7 @@ class IngredientInputDto {
 
 class StepInputDto {
   @IsOptional()
-    @Type(() => Number)  
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @ApiProperty({ example: 1 })
@@ -89,6 +89,4 @@ export class CreateRecipeDto {
   @Type(() => StepInputDto)
   @ApiProperty({ example: [{ stepNumber: 1, instruction: 'Instruction' }] })
   steps?: StepInputDto[];
-
- 
 }
