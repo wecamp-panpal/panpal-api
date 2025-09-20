@@ -160,25 +160,3 @@ model Favorite {
   @@index([recipeId])
   @@map("favorites")
 }
-
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?  @map("user_id")
-  action     String // RECIPE_CREATED, RATING_SUBMITTED, USER_LOGIN, etc.
-  resource   String // recipe, rating, user, auth, etc.
-  resourceId String?  @map("resource_id")
-  oldValues  String?  @map("old_values") // JSON string
-  newValues  String?  @map("new_values") // JSON string
-  ip         String?
-  userAgent  String?  @map("user_agent")
-  metadata   String? // Additional JSON data
-  timestamp  DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@index([resource])
-  @@index([timestamp])
-  @@index([userId, action])
-  @@index([resource, action])
-  @@map("audit_logs")
-}
