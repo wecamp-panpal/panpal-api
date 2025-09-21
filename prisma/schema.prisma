@@ -38,10 +38,12 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  recipes   Recipe[]
-  comments  Comment[]
-  ratings   Rating[]
-  favorites Favorite[]
+  recipes         Recipe[]
+  comments        Comment[]
+  ratings         Rating[]  // Keep for backward compatibility, will migrate later
+  favorites       Favorite[]
+  commentHelpful  CommentHelpful[]
+  commentReplies  CommentReply[]
 
   // Indexes
   @@index([email])
@@ -129,21 +131,73 @@ model Rating {
 }
 
 model Comment {
+  id           String    @id @default(uuid())
+  recipeId     String    @map("recipe_id")
+  userId       String    @map("user_id")
+  content      String
+  
+  // Optional rating (1-5 stars) - makes this a rating comment
+  rating       Int?      // null = regular comment, 1-5 = rating comment
+  
+  // Images for any comment type
+  imageUrls    String[]  @map("image_urls") @default([])
+  
+  // Engagement metrics
+  helpfulCount Int       @default(0) @map("helpful_count")
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // Relations
+  recipe       Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  helpfulVotes CommentHelpful[]
+  replies      CommentReply[]
+
+  // Note: We'll handle "one rating per user per recipe" constraint in application logic
+  // since Prisma unique constraints don't work well with nullable fields
+  @@index([recipeId, createdAt])
+  @@index([userId])
+  @@index([deletedAt])
+  @@index([rating]) // For filtering rated vs non-rated comments
+  @@index([helpfulCount]) // For sorting by helpful
+  @@map("comments")
+}
+
+// Track who found which comment helpful
+model CommentHelpful {
+  id        String   @id @default(uuid())
+  commentId String   @map("comment_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_helpful")
+}
+
+// Recipe author replies to comments
+model CommentReply {
   id        String    @id @default(uuid())
-  recipeId  String    @map("recipe_id")
+  commentId String    @map("comment_id")
   userId    String    @map("user_id")
   content   String
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at") // Added soft delete for consistency
+  deletedAt DateTime? @map("deleted_at")
 
-  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([recipeId, createdAt])
+  @@index([commentId])
   @@index([userId])
   @@index([deletedAt])
-  @@map("comments")
+  @@map("comment_replies")
 }
 
 model Favorite {

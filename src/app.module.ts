@@ -15,7 +15,6 @@ import { AuthModule } from './base/auth/auth.module';
 import { RecipeModule } from './core/recipe/recipe.module';
 import { CommentModule } from './core/comment/comment.module';
 import { FavoriteModule } from './core/favorite/favorite.module';
-import { RatingModule } from './core/rating/rating.module';
 import { HealthModule } from './common/health/health.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
@@ -79,7 +78,6 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     RecipeModule,
     CommentModule,
     FavoriteModule,
-    RatingModule,
     HealthModule,
   ],
   controllers: [AppController],
