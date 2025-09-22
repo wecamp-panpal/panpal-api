@@ -102,6 +102,34 @@ export class RecipeController {
     return this.recipeService.findTrending(parsedLimit);
   }
 
+  @Get('random')
+  @ApiOperation({
+    summary: 'Get a random recipe',
+    description:
+      'Returns a random recipe to help users overcome decision fatigue',
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description: 'Filter random recipe by category',
+    example: 'breakfast',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Random recipe retrieved successfully',
+    type: RecipeResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No recipes found',
+  })
+  async getRandom(
+    @Query('category') category?: string,
+    @Request() req?,
+  ): Promise<RecipeResponseDto> {
+    return this.recipeService.findRandom(category, req.user?.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get recipe by id' })
   @ApiResponse({ status: 200, description: 'Get recipe by id' })

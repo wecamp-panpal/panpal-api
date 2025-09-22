@@ -192,6 +192,94 @@ export class RecipeService {
     );
   }
 
+  async findRandom(
+    category?: string,
+    currentUserId?: string,
+  ): Promise<RecipeResponseDto> {
+    // Build where condition
+    const where: any = {};
+    if (category) {
+      where.category = category;
+    }
+
+    // First, get the total count to generate a random offset
+    const totalCount = await this.prisma.recipe.count({ where });
+
+    if (totalCount === 0) {
+      throw new NotFoundException('No recipes found');
+    }
+
+    // Generate random offset
+    const randomOffset = Math.floor(Math.random() * totalCount);
+
+    // Get one random recipe
+    const recipe = await this.prisma.recipe.findFirst({
+      where,
+      skip: randomOffset,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        ingredients: true,
+        steps: {
+          orderBy: { stepNumber: 'asc' },
+        },
+        comments: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        ratings: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        ...(currentUserId && {
+          favorites: {
+            where: { userId: currentUserId },
+            select: { id: true, userId: true },
+          },
+        }),
+        _count: {
+          select: {
+            comments: { where: { deletedAt: null } },
+            ratings: { where: { deletedAt: null } },
+            favorites: true,
+          },
+        },
+      },
+    });
+
+    if (!recipe) {
+      throw new NotFoundException('No recipes found');
+    }
+
+    return new RecipeResponseDto(recipe, currentUserId);
+  }
+
   async findAll(
     params: {
       page?: number;
