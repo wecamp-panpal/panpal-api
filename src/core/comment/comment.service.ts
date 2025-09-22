@@ -83,7 +83,7 @@ export class CommentService {
       });
 
       // If this was a rating, update recipe stats
-      if (dto.rating) {
+    if (dto.rating) {
         await this.updateRecipeRatingStats(tx, dto.recipeId);
       }
 
