@@ -101,4 +101,27 @@ export class AuthService {
     const accessToken = await this.generateAccessToken(userResponse);
     return new AuthResponseDto(userResponse, accessToken);
   }
+  async handleFirebaseUser(decodedToken: any): Promise<UserResponseDto> {
+    const {email, name}=decodedToken;
+    // find user by email
+    let user=await this.userService.findByEmail(email);
+    if(user){
+      user = await this.userService.update(user.id, {
+        picture: picture || user.picture,
+        provider: 'firebase',
+        lastLoginAt: new Date(),
+      });
+
+    }
+    else{
+      // create new user
+      user=await this.userService.create({
+        email,
+        name,
+        password:Math.random().toString(36).slice(-8), // generate random password
+        country:'Unknown'
+      });
+    }
+    return user;
+  }
 }

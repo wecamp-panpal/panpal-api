@@ -7,6 +7,8 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
+  Headers
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './dto/create-auth.dto';
@@ -15,10 +17,14 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { UserResponseDto } from '../../core/user/dto/user-response.dto';
 import { ApiResponse, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+// For Firebase
+import { FirebaseAuthGuard } from './guards/firebase-auth.guard';
+import { FirebaseAuthService } from './services/firebase-auth.service';
+import { FirebaseUser } from './decorators/firebase-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService, private firebaseAuthService:FirebaseAuthService) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @HttpCode(HttpStatus.OK)
@@ -59,5 +65,11 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Request() req): Promise<AuthResponseDto> {
     return this.authService.googleLogin(req.user);
+  }
+
+  @Post('firebase-login')
+  @UseGuards(FirebaseAuthGuard)
+  async firebaseLogin(@FirebaseUser() firebaseUser: any) {
+        return this.firebaseAuthService.loginWithFirebase(firebaseUser);
   }
 }
