@@ -143,6 +143,7 @@ export class CacheKeys {
   // static trendingRecipes(timeframe = '24h'): string {
   //   return `recipes:trending:${timeframe}`;
   // }
+
   static trendingRecipes(type = 'by_ratings', limit = 10): string {
     return `recipes:trending:${type}:${limit}`;
   }

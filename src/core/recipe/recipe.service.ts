@@ -87,20 +87,20 @@ export class RecipeService {
     return new RecipeResponseDto(recipe, authorId);
   }
 
-  // Add to src/core/recipe/recipe.service.ts
-
   async findTrending(limit = 10): Promise<RecipeListResponseDto> {
-    // Get recipes with highest rating count, then by rating average
+    // Advanced trending algorithm using unified comment system
+    // Factors: rating quality + engagement + recency + activity
+
+    // Get all recipes with engagement metrics
     const recipes = await this.prisma.recipe.findMany({
       where: {
-        ratingCount: { gt: 0 }, // Only recipes with ratings
+        // Include recipes with any form of engagement
+        OR: [
+          { ratingCount: { gt: 0 } }, // Has ratings
+          { comments: { some: { deletedAt: null } } }, // Has comments
+          { favorites: { some: {} } }, // Has favorites
+        ],
       },
-      orderBy: [
-        { ratingCount: 'desc' }, // Most rated first
-        { ratingAvg: 'desc' }, // Then by highest rating
-        { createdAt: 'desc' }, // Then by newest
-      ],
-      take: limit,
       include: {
         author: {
           select: {
@@ -116,20 +116,78 @@ export class RecipeService {
         },
         _count: {
           select: {
+            // Total comments (ratings + regular comments)
             comments: { where: { deletedAt: null } },
+            // Legacy ratings (backward compatibility)
             ratings: { where: { deletedAt: null } },
             favorites: true,
+          },
+        },
+        // Recent activity for recency boost
+        comments: {
+          where: {
+            deletedAt: null,
+            createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // Last 7 days
+          },
+          select: {
+            id: true,
+            rating: true,
+            createdAt: true,
+            helpfulCount: true,
           },
         },
       },
     });
 
+    // Calculate trending score for each recipe
+    const recipesWithScore = recipes.map((recipe) => {
+      const now = Date.now();
+      const createdAt = recipe.createdAt.getTime();
+      const ageInDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+
+      // Base engagement score
+      const ratingScore = (recipe.ratingAvg || 0) * (recipe.ratingCount || 0);
+      const commentScore = recipe._count.comments * 2; // Comments are valuable
+      const favoriteScore = recipe._count.favorites * 3; // Favorites show intent
+
+      // Recent activity bonus (last 7 days)
+      const recentActivity = recipe.comments.length;
+      const recentRatings = recipe.comments.filter((c) => c.rating).length;
+      const avgHelpfulScore =
+        recipe.comments.length > 0
+          ? recipe.comments.reduce((sum, c) => sum + (c.helpfulCount || 0), 0) /
+            recipe.comments.length
+          : 0;
+
+      // Recency multiplier (newer recipes get slight boost, but not too much)
+      const recencyMultiplier = Math.max(0.5, 1 - ageInDays / 365); // Gradual decay over a year
+
+      // Activity velocity (recent engagement)
+      const velocityBonus =
+        recentActivity * 5 + recentRatings * 10 + avgHelpfulScore * 2;
+
+      // Final trending score
+      const trendingScore =
+        (ratingScore * 10 + commentScore + favoriteScore + velocityBonus) *
+        recencyMultiplier;
+
+      return {
+        ...recipe,
+        trendingScore,
+      };
+    });
+
+    // Sort by trending score and take top results
+    const sortedRecipes = recipesWithScore
+      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .slice(0, limit);
+
     return new RecipeListResponseDto(
-      recipes.map((r) => new RecipeResponseDto(r)),
+      sortedRecipes.map((r) => new RecipeResponseDto(r)),
       {
         page: 1,
         limit,
-        total: recipes.length,
+        total: sortedRecipes.length,
       },
     );
   }

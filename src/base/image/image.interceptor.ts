@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 
 export interface ImageInterceptorOptions {
@@ -79,7 +79,7 @@ export function MultipleImageUploadInterceptor(
     },
   };
 
-  return FileInterceptor(fieldName, multerOptions);
+  return FilesInterceptor(fieldName, maxCount, multerOptions);
 }
 
 /**
@@ -109,5 +109,12 @@ export const StepImageInterceptor = () =>
   ImageUploadInterceptor({
     fieldName: 'stepImage',
     maxSize: 3 * 1024 * 1024, // 3MB
+    allowedTypes: ['jpg', 'jpeg', 'png', 'webp'],
+  });
+
+export const CommentImageInterceptor = () =>
+  MultipleImageUploadInterceptor(10, {
+    fieldName: 'commentImage',
+    maxSize: 5 * 1024 * 1024, // 5MB
     allowedTypes: ['jpg', 'jpeg', 'png', 'webp'],
   });
