@@ -1,26 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import { AuthService } from "../auth.service";
+import { UnauthorizedException } from "@nestjs/common";import { Auth } from "../entities/auth.entity";
+import { AuthResponseDto } from "../dto/auth-response.dto";
 
 @Injectable()
 export class FirebaseAuthService {
   constructor(private readonly authService: AuthService) {}
 
-  async loginWithFirebase(decodedToken: any) {
-    // Handle user login/creation
-    const user = await this.authService.handleFirebaseUser(decodedToken);
-    
-    // Generate JWT tokens
-    const tokens = await this.authService.generateAccessToken(user);
-    
-    return {
-      token: tokens.access_token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        picture: user.picture,
-      }
-    };
+  async loginWithFirebase(decodedToken: any): Promise<AuthResponseDto> {
+    try {
+      return this.authService.firebaseLogin(decodedToken);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid Firebase token');
+    }
   }
 }

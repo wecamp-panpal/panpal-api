@@ -9,6 +9,8 @@ import { LoginDto, RegisterDto } from './dto/create-auth.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { UserResponseDto } from '../../core/user/dto/user-response.dto';
 import * as bcrypt from 'bcrypt';
+import { count } from 'console';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -105,23 +107,19 @@ export class AuthService {
     const {email, name}=decodedToken;
     // find user by email
     let user=await this.userService.findByEmail(email);
-    if(user){
-      user = await this.userService.update(user.id, {
-        picture: picture || user.picture,
-        provider: 'firebase',
-        lastLoginAt: new Date(),
-      });
-
-    }
-    else{
-      // create new user
-      user=await this.userService.create({
+    if(!user){
+      user=await this.userService.createOAuthUser({
         email,
-        name,
-        password:Math.random().toString(36).slice(-8), // generate random password
-        country:'Unknown'
+        name: name || 'Firebase User',
+        country: 'Unknown',
       });
     }
-    return user;
+    return new UserResponseDto(user);
   }
+  async firebaseLogin(decodedToken: any): Promise<AuthResponseDto> {
+    const user=await this.handleFirebaseUser(decodedToken);
+    const accessToken = await this.generateAccessToken(user);
+    return new AuthResponseDto(user, accessToken);
+  }
+
 }

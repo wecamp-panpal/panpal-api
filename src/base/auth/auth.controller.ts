@@ -67,7 +67,12 @@ export class AuthController {
     return this.authService.googleLogin(req.user);
   }
 
-  @Post('firebase-login')
+  @ApiOperation({ summary: 'Firebase OAuth login' })
+  @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
+  @ApiResponse({ status: 401, description: 'Invalid Firebase token' })
+
+  @HttpCode(HttpStatus.OK)
+  @Post('firebase/oauth')
   @UseGuards(FirebaseAuthGuard)
   async firebaseLogin(@FirebaseUser() firebaseUser: any) {
         return this.firebaseAuthService.loginWithFirebase(firebaseUser);

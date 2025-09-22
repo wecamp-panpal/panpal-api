@@ -1,9 +1,12 @@
 import * as admin from 'firebase-admin'
-
-const serviceAccount=require("../../panpal-api-firebase-adminsdk-fbsvc-1bf783f0d4.json");
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
-
+// config setting for firebase admin sdk
+if(admin.apps.length){
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    })
+  })
+}
 export { admin };
