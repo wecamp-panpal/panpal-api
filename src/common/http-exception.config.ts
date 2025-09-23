@@ -32,7 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     );
 
     let res_content: object;
-    
+
     // Handle specific exception types with better messages
     if (exception instanceof UnauthorizedException) {
       res_content = {
@@ -41,7 +41,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         statusCode: status,
       };
     } else if (typeof data === 'string') {
-      res_content = { 
+      res_content = {
         message: data,
         error: name,
         statusCode: status,
@@ -61,9 +61,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     // Only add stack trace in development mode and for server errors (5xx)
-    const isDevelopment = this.configService.get<string>('NODE_ENV') === 'development';
+    const isDevelopment =
+      this.configService.get<string>('NODE_ENV') === 'development';
     const isServerError = status >= 500;
-    
+
     if (isDevelopment && isServerError) {
       assign(res_content, { stack: exception.stack });
     }

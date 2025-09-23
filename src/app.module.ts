@@ -15,7 +15,6 @@ import { AuthModule } from './base/auth/auth.module';
 import { RecipeModule } from './core/recipe/recipe.module';
 import { CommentModule } from './core/comment/comment.module';
 import { FavoriteModule } from './core/favorite/favorite.module';
-import { RatingModule } from './core/rating/rating.module';
 import { HealthModule } from './common/health/health.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 
@@ -56,20 +55,22 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => [
+        // best practices
+        // https://docs.nestjs.com/security/rate-limiting
         {
           name: 'short',
           ttl: 1000,
-          limit: configService.get('THROTTLE_SHORT_LIMIT', 3),
+          limit: configService.get('THROTTLE_SHORT_LIMIT', 3), // 3 requests per second
         },
         {
           name: 'medium',
           ttl: 10000,
-          limit: configService.get('THROTTLE_MEDIUM_LIMIT', 20),
+          limit: configService.get('THROTTLE_MEDIUM_LIMIT', 20), // 20 requests per 10 seconds
         },
         {
           name: 'long',
           ttl: 60000,
-          limit: configService.get('THROTTLE_LONG_LIMIT', 100),
+          limit: configService.get('THROTTLE_LONG_LIMIT', 100), // 100 requests per minute
         },
       ],
       inject: [ConfigService],
@@ -79,7 +80,6 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     RecipeModule,
     CommentModule,
     FavoriteModule,
-    RatingModule,
     HealthModule,
   ],
   controllers: [AppController],

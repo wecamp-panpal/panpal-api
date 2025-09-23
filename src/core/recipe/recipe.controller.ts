@@ -56,6 +56,7 @@ export class RecipeController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'authorId', required: false })
   @ApiResponse({ status: 200, description: 'List recipes' })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   async findAll(
@@ -64,6 +65,7 @@ export class RecipeController {
     @Query('limit') limit?: string,
     @Query('category') category?: string,
     @Query('search') search?: string,
+    @Query('authorId') authorId?: string,
   ): Promise<RecipeListResponseDto> {
     return this.recipeService.findAll(
       {
@@ -71,9 +73,61 @@ export class RecipeController {
         limit: limit ? parseInt(limit, 10) : 10,
         category,
         search,
+        authorId,
       },
       req.user?.id,
     );
+  }
+
+  @Get('trending')
+  @ApiOperation({
+    summary: 'Get trending recipes',
+    description: 'Get top recipes by rating count and average rating',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of trending recipes to return (default: 10, max: 50)',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trending recipes retrieved successfully',
+    type: RecipeListResponseDto,
+  })
+  async getTrending(
+    @Query('limit') limit?: string,
+  ): Promise<RecipeListResponseDto> {
+    const parsedLimit = Math.min(50, Math.max(1, parseInt(limit || '10', 10)));
+    return this.recipeService.findTrending(parsedLimit);
+  }
+
+  @Get('random')
+  @ApiOperation({
+    summary: 'Get a random recipe',
+    description:
+      'Returns a random recipe to help users overcome decision fatigue',
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    description: 'Filter random recipe by category',
+    example: 'breakfast',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Random recipe retrieved successfully',
+    type: RecipeResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No recipes found',
+  })
+  async getRandom(
+    @Query('category') category?: string,
+    @Request() req?,
+  ): Promise<RecipeResponseDto> {
+    return this.recipeService.findRandom(category, req.user?.id);
   }
 
   @Get(':id')

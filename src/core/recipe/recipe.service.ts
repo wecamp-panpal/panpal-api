@@ -80,7 +80,204 @@ export class RecipeService {
         favorites: true,
       },
     });
+
+    // invalidate recipe caches sau khi tạo 1 recipe mới
+    await this.invalidateRecipeCaches(recipe.id);
+
     return new RecipeResponseDto(recipe, authorId);
+  }
+
+  async findTrending(limit = 10): Promise<RecipeListResponseDto> {
+    // Advanced trending algorithm using unified comment system
+    // Factors: rating quality + engagement + recency + activity
+
+    // Get all recipes with engagement metrics
+    const recipes = await this.prisma.recipe.findMany({
+      where: {
+        // Include recipes with any form of engagement
+        OR: [
+          { ratingCount: { gt: 0 } }, // Has ratings
+          { comments: { some: { deletedAt: null } } }, // Has comments
+          { favorites: { some: {} } }, // Has favorites
+        ],
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        ingredients: true,
+        steps: {
+          orderBy: { stepNumber: 'asc' },
+        },
+        _count: {
+          select: {
+            // Total comments (ratings + regular comments)
+            comments: { where: { deletedAt: null } },
+            // Legacy ratings (backward compatibility)
+            ratings: { where: { deletedAt: null } },
+            favorites: true,
+          },
+        },
+        // Recent activity for recency boost
+        comments: {
+          where: {
+            deletedAt: null,
+            createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // Last 7 days
+          },
+          select: {
+            id: true,
+            rating: true,
+            createdAt: true,
+            helpfulCount: true,
+          },
+        },
+      },
+    });
+
+    // Calculate trending score for each recipe
+    const recipesWithScore = recipes.map((recipe) => {
+      const now = Date.now();
+      const createdAt = recipe.createdAt.getTime();
+      const ageInDays = (now - createdAt) / (1000 * 60 * 60 * 24);
+
+      // Base engagement score
+      const ratingScore = (recipe.ratingAvg || 0) * (recipe.ratingCount || 0);
+      const commentScore = recipe._count.comments * 2; // Comments are valuable
+      const favoriteScore = recipe._count.favorites * 3; // Favorites show intent
+
+      // Recent activity bonus (last 7 days)
+      const recentActivity = recipe.comments.length;
+      const recentRatings = recipe.comments.filter((c) => c.rating).length;
+      const avgHelpfulScore =
+        recipe.comments.length > 0
+          ? recipe.comments.reduce((sum, c) => sum + (c.helpfulCount || 0), 0) /
+            recipe.comments.length
+          : 0;
+
+      // Recency multiplier (newer recipes get slight boost, but not too much)
+      const recencyMultiplier = Math.max(0.5, 1 - ageInDays / 365); // Gradual decay over a year
+
+      // Activity velocity (recent engagement)
+      const velocityBonus =
+        recentActivity * 5 + recentRatings * 10 + avgHelpfulScore * 2;
+
+      // Final trending score
+      const trendingScore =
+        (ratingScore * 10 + commentScore + favoriteScore + velocityBonus) *
+        recencyMultiplier;
+
+      return {
+        ...recipe,
+        trendingScore,
+      };
+    });
+
+    // Sort by trending score and take top results
+    const sortedRecipes = recipesWithScore
+      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .slice(0, limit);
+
+    return new RecipeListResponseDto(
+      sortedRecipes.map((r) => new RecipeResponseDto(r)),
+      {
+        page: 1,
+        limit,
+        total: sortedRecipes.length,
+      },
+    );
+  }
+
+  async findRandom(
+    category?: string,
+    currentUserId?: string,
+  ): Promise<RecipeResponseDto> {
+    // Build where condition
+    const where: any = {};
+    if (category) {
+      where.category = category;
+    }
+
+    // First, get the total count to generate a random offset
+    const totalCount = await this.prisma.recipe.count({ where });
+
+    if (totalCount === 0) {
+      throw new NotFoundException('No recipes found');
+    }
+
+    // Generate random offset
+    const randomOffset = Math.floor(Math.random() * totalCount);
+
+    // Get one random recipe
+    const recipe = await this.prisma.recipe.findFirst({
+      where,
+      skip: randomOffset,
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        ingredients: true,
+        steps: {
+          orderBy: { stepNumber: 'asc' },
+        },
+        comments: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        ratings: {
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                avatarUrl: true,
+              },
+            },
+          },
+        },
+        ...(currentUserId && {
+          favorites: {
+            where: { userId: currentUserId },
+            select: { id: true, userId: true },
+          },
+        }),
+        _count: {
+          select: {
+            comments: { where: { deletedAt: null } },
+            ratings: { where: { deletedAt: null } },
+            favorites: true,
+          },
+        },
+      },
+    });
+
+    if (!recipe) {
+      throw new NotFoundException('No recipes found');
+    }
+
+    return new RecipeResponseDto(recipe, currentUserId);
   }
 
   async findAll(
@@ -89,6 +286,7 @@ export class RecipeService {
       limit?: number;
       category?: string;
       search?: string;
+      authorId?: string;
     },
     currentUserId?: string,
   ): Promise<RecipeListResponseDto> {
@@ -102,6 +300,7 @@ export class RecipeService {
       page,
       limit,
       currentUserId,
+      params.authorId,
     );
 
     // Try cache first, then fetch if needed
@@ -111,8 +310,14 @@ export class RecipeService {
         const skip = (page - 1) * limit;
         const where: any = {};
         if (params.category) where.category = params.category;
-        if (params.search)
-          where.title = { contains: params.search, mode: 'insensitive' };
+        if (params.search) {
+          where.OR = [
+            { title: { contains: params.search, mode: 'insensitive' } },
+            { description: { contains: params.search, mode: 'insensitive' } },
+            { authorName: { contains: params.search, mode: 'insensitive' } },
+          ];
+        }
+        if (params.authorId) where.authorId = params.authorId;
 
         const [items, total] = await this.prisma.$transaction([
           this.prisma.recipe.findMany({
@@ -309,7 +514,7 @@ export class RecipeService {
       },
     });
 
-    // Invalidate recipe caches
+    // Invalidate recipe caches after update
     await this.invalidateRecipeCaches(id);
 
     return new RecipeResponseDto(recipe, requesterId);
@@ -358,7 +563,11 @@ export class RecipeService {
         favorites: true,
       },
     });
-    return new RecipeResponseDto(recipe);
+
+    // Invalidate recipe caches after image update
+    await this.invalidateRecipeCaches(id);
+
+    return new RecipeResponseDto(recipe, requesterId);
   }
 
   async updateStepImage(
@@ -408,25 +617,36 @@ export class RecipeService {
    */
   private async invalidateRecipeCaches(recipeId: string): Promise<void> {
     try {
-      // Invalidate specific recipe detail caches
-      await this.cacheService.invalidatePattern(
-        CacheKeys.recipePattern(recipeId),
-        'recipes',
-      );
+      console.log(`🗑️ Invalidating caches for recipe: ${recipeId}`);
 
-      // Invalidate recipe lists (all categories, searches, etc.)
-      await this.cacheService.invalidatePattern('recipes:list:*', 'recipes');
+      // Invalidate in both 'default' and 'recipes' buckets
+      const buckets = ['default', 'recipes'];
 
-      // Invalidate trending recipes
-      await this.cacheService.invalidatePattern(
-        'recipes:trending:*',
-        'recipes',
-      );
+      for (const bucket of buckets) {
+        // Invalidate specific recipe detail caches
+        await this.cacheService.invalidatePattern(
+          CacheKeys.recipePattern(recipeId),
+          bucket,
+        );
 
-      // Note: User-specific caches (favorites) will be invalidated by their respective services
+        // Invalidate recipe lists (all categories, searches, etc.)
+        await this.cacheService.invalidatePattern('recipes:list:*', bucket);
+        await this.cacheService.invalidatePattern('recipe:*', bucket);
+
+        // Invalidate all trending recipes (all types and limits)
+        await this.cacheService.invalidatePattern('recipes:trending:*', bucket);
+
+        // Invalidate user favorites (since recipe data changed)
+        await this.cacheService.invalidatePattern('user:favorites:*', bucket);
+      }
+
+      console.log(`✅ Cache invalidation completed for recipe: ${recipeId}`);
     } catch (error) {
       // Log but don't throw - cache invalidation shouldn't break the main operation
-      console.error('Cache invalidation failed:', error);
+      console.error(
+        `❌ Cache invalidation failed for recipe ${recipeId}:`,
+        error,
+      );
     }
   }
 }

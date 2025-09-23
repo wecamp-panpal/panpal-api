@@ -23,6 +23,7 @@ class IngredientInputDto {
 
 class StepInputDto {
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @ApiProperty({ example: 1 })
@@ -88,13 +89,4 @@ export class CreateRecipeDto {
   @Type(() => StepInputDto)
   @ApiProperty({ example: [{ stepNumber: 1, instruction: 'Instruction' }] })
   steps?: StepInputDto[];
-
-  @IsOptional()
-  @ApiProperty({
-    type: 'string',
-    format: 'binary',
-    description: 'Recipe image file (jpg, jpeg, png, webp - max 5MB)',
-    required: false,
-  })
-  image?: any;
 }

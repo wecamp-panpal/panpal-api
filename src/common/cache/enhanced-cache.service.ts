@@ -120,8 +120,11 @@ export class CacheKeys {
     page = 1,
     limit = 10,
     userId?: string,
+    authorId?: string,
   ): string {
-    const filters = [category, search, userId].filter(Boolean).join(':');
+    const filters = [category, search, userId, authorId]
+      .filter(Boolean)
+      .join(':');
     return `recipes:list:${filters}:${page}:${limit}`;
   }
 
@@ -137,8 +140,12 @@ export class CacheKeys {
     return `user:favorites:${userId}:${page}:${limit}`;
   }
 
-  static trendingRecipes(timeframe = '24h'): string {
-    return `recipes:trending:${timeframe}`;
+  // static trendingRecipes(timeframe = '24h'): string {
+  //   return `recipes:trending:${timeframe}`;
+  // }
+
+  static trendingRecipes(type = 'by_ratings', limit = 10): string {
+    return `recipes:trending:${type}:${limit}`;
   }
 
   static userPattern(userId: string): string {
@@ -152,10 +159,10 @@ export class CacheKeys {
 
 // Cache TTL constants (in seconds)
 export const CacheTTL = {
-  RECIPE_LIST: 300, // 5 minutes
-  RECIPE_DETAIL: 900, // 15 minutes
-  RECIPE_RATINGS: 600, // 10 minutes
-  USER_FAVORITES: 300, // 5 minutes
-  TRENDING: 1800, // 30 minutes
-  SEARCH_RESULTS: 180, // 3 minutes
+  RECIPE_LIST: 10, // 1 minute
+  RECIPE_DETAIL: 10, // 2 minutes
+  RECIPE_RATINGS: 15, // 15 seconds
+  USER_FAVORITES: 10, // 10 seconds
+  TRENDING: 300, // 1 minute
+  SEARCH_RESULTS: 10, // 10 seconds
 } as const;
