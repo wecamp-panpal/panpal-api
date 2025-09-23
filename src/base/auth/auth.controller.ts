@@ -25,7 +25,7 @@ import { FirebaseUser } from './decorators/firebase-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService, private firebaseAuthService:FirebaseAuthService) {}
+  constructor(private readonly authService: AuthService, private readonly firebaseAuthService:FirebaseAuthService) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @HttpCode(HttpStatus.OK)
