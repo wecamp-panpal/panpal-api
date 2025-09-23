@@ -9,6 +9,7 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { PrismaService } from '../../common/prisma.service';
 import { ImageService } from '../../base/image';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -168,4 +169,22 @@ export class UserService {
 
     return new UserResponseDto(user);
   }
+
+  async createOAuthUser(createUserDto: Omit<CreateUserDto, 'password'> & { email: string; name?: string }): Promise<UserResponseDto> {
+    // Tạo random password hash cho OAuth users
+    const randomPassword = crypto.randomBytes(32).toString('hex');
+    const passwordHash = await bcrypt.hash(randomPassword, 10);
+
+    const user=await this.prisma.user.create({
+      data: {
+        email: createUserDto.email,
+        passwordHash,
+        name: createUserDto.name,
+        country: createUserDto.country || 'Unknown',
+        avatarUrl: createUserDto.avatarUrl,
+      },
+    });
+    return new UserResponseDto(user);
+  }
+
 }
