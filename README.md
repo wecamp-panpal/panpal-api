@@ -241,8 +241,6 @@ SUPABASE_BUCKET="your-bucket-name"
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
 - `GET /api/auth/profile` - Get user profile (protected)
-- `GET /api/auth/google` - Google OAuth login
-- `GET /api/auth/google/callback` - Google OAuth callback
 
 ### Recipe Endpoints
 
