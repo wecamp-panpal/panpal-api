@@ -1,21 +1,3 @@
-<header id="#header">
-<p align="center" >
-  <a name="header"></a>
-  <img src="./public/bigLogo.svg" alt="Big Logo" />
-</p>
-
-<p  align="center" >
-  A recipe sharing platform for food lovers and cooking enthusiasts.
-</p>
-
-<h1  align="center" >
-  WeCamp Batch 8 - PanPal Frontend
-</h1>
-<p align="justify">
-PanPal is a modern recipe sharing web application built with React, TypeScript, and Material-UI. This frontend application provides an intuitive interface for users to discover, create, and share delicious recipes with a vibrant cooking community. With features like user authentication, recipe management, advanced search and filtering, favorites system, step-by-step cooking instructions with images, and trending recipes, PanPal offers an engaging cooking experience for both beginners and professional chefs.
-</p>
-</header>
-
 # PanPal API
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
