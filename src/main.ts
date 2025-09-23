@@ -48,6 +48,14 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
+    // Add these headers for fixing Firebase popup issues
+    exposedHeaders: ['Cross-Origin-Opener-Policy'],
+  });
+
+  app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    next();
   });
 
   const config = new DocumentBuilder()

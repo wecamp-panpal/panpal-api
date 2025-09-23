@@ -104,17 +104,23 @@ export class AuthService {
     return new AuthResponseDto(userResponse, accessToken);
   }
   async handleFirebaseUser(decodedToken: any): Promise<UserResponseDto> {
-    const {email, name}=decodedToken;
-    // find user by email
-    let user=await this.userService.findByEmail(email);
-    if(!user){
-      user=await this.userService.createOAuthUser({
-        email,
-        name: name || 'Firebase User',
-        country: 'Unknown',
-      });
+    const { email, name } = decodedToken;
+    
+    // Find user by email
+    const existingUser = await this.userService.findByEmail(email);
+    
+    if (existingUser) {
+      return new UserResponseDto(existingUser);
     }
-    return new UserResponseDto(user);
+    
+    // Create new user if not exists
+    const newUser = await this.userService.createOAuthUser({
+      email,
+      name: name || 'Firebase User',
+      country: 'Unknown',
+    });
+    
+    return newUser; // createOAuthUser already returns UserResponseDto
   }
   async firebaseLogin(decodedToken: any): Promise<AuthResponseDto> {
     const user=await this.handleFirebaseUser(decodedToken);

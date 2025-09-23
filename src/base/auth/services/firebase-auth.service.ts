@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { AuthService } from "../auth.service";
-import { UnauthorizedException } from "@nestjs/common";import { Auth } from "../entities/auth.entity";
+import { UnauthorizedException } from "@nestjs/common";
 import { AuthResponseDto } from "../dto/auth-response.dto";
 
 @Injectable()
