@@ -1,3 +1,21 @@
+<header id="#header">
+<p align="center" >
+  <a name="header"></a>
+  <img src="./public/bigLogo.svg" alt="Big Logo" />
+</p>
+
+<p  align="center" >
+  A recipe sharing platform for food lovers and cooking enthusiasts.
+</p>
+
+<h1  align="center" >
+  WeCamp Batch 8 - PanPal Frontend
+</h1>
+<p align="justify">
+PanPal is a modern recipe sharing web application built with React, TypeScript, and Material-UI. This frontend application provides an intuitive interface for users to discover, create, and share delicious recipes with a vibrant cooking community. With features like user authentication, recipe management, advanced search and filtering, favorites system, step-by-step cooking instructions with images, and trending recipes, PanPal offers an engaging cooking experience for both beginners and professional chefs.
+</p>
+</header>
+
 # PanPal API
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
@@ -23,6 +41,7 @@ A robust and scalable REST API for PanPal - a modern recipe sharing platform tha
 - [Testing](#testing)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
+- [Team](#team)
 
 ## Features
 
@@ -378,6 +397,23 @@ npm run test:e2e          # Run E2E tests
 - Use conventional commit messages
 - Include tests for new features
 - Update documentation as needed
+
+## Team
+
+**WeCamp Batch 8 - Team PanPal**
+
+| Name                     | GitHub                                                         |
+| ------------------------ | -------------------------------------------------------------- |
+| Hoàng Thị Minh Khuê      | [@htmkhue39](https://github.com/htmkhue39)                     |
+| Trần Đồng Trúc Lam       | [@limelight-hub](https://github.com/limelight-hub)             |
+| Võ Thị Hồng Minh         | [@vominh-source](https://github.com/vominh-source)             |
+| Võ Lê Việt Tú            | [@voleviettu](https://github.com/voleviettu)                   |
+| Hoàng Ngọc Quỳnh Anh     | [@quynhanhhoang572004](https://github.com/quynhanhhoang572004) |
+| Phạm Ngọc Diễm (Advisor) | [@diem-github](https://github.com/diem-github)                 |
+### Special Thanks
+
+- **WeCamp Batch 8** - For providing the platform and mentorship
+- **NestJS Community** - For the amazing framework and resources
 
 ## License
 
