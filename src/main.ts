@@ -45,6 +45,7 @@ async function bootstrap() {
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:3000',
+      'https://panpal-eta.vercel.app/'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
