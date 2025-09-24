@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { HttpExceptionFilter } from './common/http-exception.config';
+import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { ConfigService } from '@nestjs/config';
 import compression from 'compression';
 import * as express from 'express';
@@ -18,12 +19,33 @@ async function bootstrap() {
   const port = process.env.API_SERVICE_PORT ?? 3000;
   const global_prefix = '/api';
   const name = 'PanPal API';
+  const nodeEnv = configService.getOrThrow<string>('NODE_ENV');
 
   app.setGlobalPrefix(global_prefix);
+  
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS?.split(',') ?? [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'https://panpal-eta.vercel.app',
+    nodeEnv === 'production'
+      ? configService.getOrThrow<string>('FE_PRODUCTION_URL')
+      : undefined,
+  ]
+)
+  .filter((o): o is string => Boolean(o)); // ✅ type guard: chỉ còn string
 
+app.enableCors({
+  origin: allowedOrigins,  // lúc này TS hiểu là string[]
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Cross-Origin-Opener-Policy'],
+} satisfies CorsOptions);
   // Enable compression
   app.use(compression());
-
+  
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -40,19 +62,6 @@ async function bootstrap() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:3000',
-      'https://panpal-eta.vercel.app/'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    // Add these headers for fixing Firebase popup issues
-    exposedHeaders: ['Cross-Origin-Opener-Policy'],
-  });
 
   app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
