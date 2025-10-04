@@ -179,7 +179,7 @@ export class RecipeService {
 
     // Sort by trending score and take top results
     const sortedRecipes = recipesWithScore
-      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .toSorted((a, b) => b.trendingScore - a.trendingScore)
       .slice(0, limit);
 
     return new RecipeListResponseDto(
@@ -210,6 +210,9 @@ export class RecipeService {
     }
 
     // Generate random offset
+    // offset: truy từ offset số mấy + limit là bao nhiêu
+    // 0 <= Math.random() < 1
+    // Có thể là: 0.0, 0.5, 0.999999... nhưng KHÔNG BAO GIỜ là 1.0
     const randomOffset = Math.floor(Math.random() * totalCount);
 
     // Get one random recipe
@@ -225,10 +228,16 @@ export class RecipeService {
             avatarUrl: true,
           },
         },
+        // chỗ này là left join để lấy tất cả các field của ingredients
+        // LEFT JOIN ingredients i ON r.id = i.recipe_id
+        // SELECT i.* (lất all fields của ingredients)
         ingredients: true,
+        // LEFT JOIN steps s ON r.id = s.recipe_id
+        // ORDER BY s.step_number ASC
         steps: {
           orderBy: { stepNumber: 'asc' },
         },
+        // 10 comments mới nhất chưa bị xóa
         comments: {
           where: { deletedAt: null },
           orderBy: { createdAt: 'desc' },
@@ -243,6 +252,14 @@ export class RecipeService {
             },
           },
         },
+        // LEFT JOIN comments c ON r.id = c.recipe_id 
+        // LEFT JOIN users u ON c.user_id = u.id
+        // WHERE c.deleted_at IS NULL
+        // ORDER BY c.created_at DESC
+        // LIMIT 10
+        // SELECT c.*, u.id, u.name, u.avatar_url
+
+        // 10 ratings mới nhất chưa bị xóa
         ratings: {
           where: { deletedAt: null },
           orderBy: { createdAt: 'desc' },
@@ -257,12 +274,20 @@ export class RecipeService {
             },
           },
         },
+        // LEFT JOIN ratings ON r.id = ratings.recipe_id
+        // LEFT JOIN users u ON ratings.user_id = u.id
+        // WHERE ratings.deleted_at IS NULL
+        // ORDER BY ratings.created_at DESC
+        // LIMIT 10
+        // SELECT ratings.*, u.id, u.name, u.avatar_url
         ...(currentUserId && {
           favorites: {
-            where: { userId: currentUserId },
+            where: { userId: currentUserId }, // chỉ lấy favorite của user hiện tại
             select: { id: true, userId: true },
           },
         }),
+        // nếu user hiện tại không null thì mới left join
+        // LEFT JOIN favorites f ON r.id = f.recipe_id AND f.user_id = currentUserId
         _count: {
           select: {
             comments: { where: { deletedAt: null } },
@@ -270,6 +295,9 @@ export class RecipeService {
             favorites: true,
           },
         },
+        // đếm số lượng comments chưa bị xóa
+        // đếm số lượng ratings chưa bị xóa
+        // đếm tất cả favorites
       },
     });
 
@@ -365,8 +393,11 @@ export class RecipeService {
                 },
               }),
             },
+
+            
           }),
           this.prisma.recipe.count({ where }),
+          
         ]);
 
         return new RecipeListResponseDto(
@@ -451,7 +482,9 @@ export class RecipeService {
               },
             },
           },
-        });
+        }
+      
+      );
         if (!recipe) throw new NotFoundException('Recipe not found');
         return new RecipeResponseDto(recipe, currentUserId);
       },
