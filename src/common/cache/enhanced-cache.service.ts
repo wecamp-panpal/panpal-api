@@ -120,6 +120,9 @@ export class EnhancedCacheService {
       this.logger.error(`Cache pattern invalidation failed: ${error.message}`);
     }
   }
+}
+
+
 
 // Cache key generators for consistent naming
 export class CacheKeys {
