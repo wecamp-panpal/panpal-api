@@ -98,19 +98,28 @@ export class EnhancedCacheService {
    */
   async invalidatePattern(pattern: string, bucket = 'default'): Promise<void> {
     try {
-      // This is a simplified pattern invalidation
-      // In a real Redis implementation, you'd use SCAN
-      this.logger.log(
-        `Cache invalidation requested for pattern: ${bucket}:${pattern}`,
-      );
+      const store: any = this.cache.stores;
+      if (typeof store.keys === 'function' && typeof store.del === 'function') {
+        const keys: string[] = await store.keys();
+        const regex = new RegExp(`^${bucket}:${pattern.replace('*', '.*')}$`);
 
+        for (const key of keys) {
+          if (regex.test(key)) {
+            await store.del(key);
+            this.logger.debug(`Cache DEL (pattern): ${key}`);
+          }
+        }
+        this.logger.log(`Cache invalidation completed for pattern: ${bucket}:${pattern}`);
+        return;
+      }
+        this.logger.warn(`Cache store does not support key listing`);
+        return;
       // For now, we'll rely on TTL expiration
       // TODO: Implement proper pattern-based deletion with Redis SCAN
     } catch (error) {
       this.logger.error(`Cache pattern invalidation failed: ${error.message}`);
     }
   }
-}
 
 // Cache key generators for consistent naming
 export class CacheKeys {
